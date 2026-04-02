@@ -16,8 +16,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic.base import TemplateView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('sensores.urls')),
+    path("accounts/", include("accounts.urls")),  # App para registros. NO BORRAR
+    path("accounts/", include("django.contrib.auth.urls")), # App Django para autenticación
 ]
