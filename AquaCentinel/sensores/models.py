@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User # Importamos el modelo estándar
+from django.core.validators import MinValueValidator
 
 class Boya(models.Model):
     codigo_boya = models.CharField(max_length=100, unique=True)
@@ -16,8 +17,8 @@ class Boya(models.Model):
 
 class RegistroSensor(models.Model):
     boya = models.ForeignKey(Boya, on_delete=models.CASCADE)
-    ph = models.FloatField()
-    turbidez = models.FloatField()
-    temperatura = models.FloatField()
-    conductividad = models.FloatField()
+    ph = models.FloatField(validators=[MinValueValidator(0.0)])
+    turbidez = models.FloatField(validators=[MinValueValidator(0.0)])
+    temperatura = models.FloatField(validators=[MinValueValidator(0.0)])
+    conductividad = models.FloatField(validators=[MinValueValidator(0.0)])
     fecha_creacion = models.DateTimeField(auto_now_add=True)
