@@ -1,0 +1,355 @@
+:root {
+--blue: #0A75D1;
+--blue-dark: #084B8A;
+--blue-lite: #EAF6FF;
+--white: #ffffff;
+--gray: #6b7280;
+--transition: all 0.3s ease;
+}
+
+html {
+scroll-behavior: smooth;
+}
+
+body {
+font-family: 'Inter', sans-serif;
+background: #ffffff;
+color: #1f2937;
+line-height: 1.6;
+}
+
+/* Imagenes responsivas */
+.img-responsive {
+width: 100%;
+max-width: 100%;
+height: auto;
+object-fit: cover;
+border-radius: 12px;
+display: block;
+}
+
+.hero-img {
+width: 100%;
+height: auto;
+max-height: 350px;
+object-fit: cover;
+border-radius: 12px;
+box-shadow: 0 12px 40px rgba(0, 51, 120, 0.15);
+transition: var(--transition);
+}
+
+.hero-img:hover {
+transform: translateY(-5px);
+box-shadow: 0 20px 50px rgba(0, 51, 120, 0.2);
+}
+
+.carousel-img {
+width: 100%;
+height: 390px;
+object-fit: cover;
+border-radius: 12px;
+display: block;
+}
+
+@media (max-width: 768px) {
+.carousel-img {
+    height: 240px;
+}
+}
+
+.navbar {
+background: #ffffff !important;
+box-shadow: 0 4px 20px rgba(0, 52, 120, 0.08);
+transition: var(--transition);
+padding: 12px 0;
+}
+
+.navbar.scrolled {
+padding: 8px 0;
+box-shadow: 0 6px 25px rgba(0, 52, 120, 0.12);
+}
+
+.nav-link {
+color: var(--blue-dark) !important;
+font-weight: 600;
+position: relative;
+transition: var(--transition);
+}
+
+.nav-link:after {
+content: '';
+position: absolute;
+width: 0;
+height: 2px;
+bottom: 0;
+left: 0;
+background-color: var(--blue);
+transition: var(--transition);
+}
+
+.nav-link:hover:after {
+width: 100%;
+}
+
+.cta-btn {
+background: var(--blue);
+color: #ffffff !important;
+padding: 10px 25px;
+border-radius: 25px;
+font-weight: 600;
+transition: var(--transition);
+border: 2px solid var(--blue);
+}
+
+.cta-btn:hover {
+background: var(--blue-dark);
+transform: translateY(-2px);
+box-shadow: 0 6px 15px rgba(10, 117, 209, 0.3);
+}
+
+.cta-btn-outline {
+background: transparent;
+color: var(--blue) !important;
+border: 2px solid var(--blue);
+padding: 10px 25px;
+border-radius: 25px;
+font-weight: 600;
+transition: var(--transition);
+}
+
+.cta-btn-outline:hover {
+background: var(--blue);
+color: white !important;
+transform: translateY(-2px);
+}
+
+.hero {
+background: linear-gradient(180deg, #EAF6FF, #ffffff);
+padding: 140px 0 80px;
+position: relative;
+overflow: hidden;
+}
+
+.hero:before {
+content: '';
+position: absolute;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%230a75d1' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+z-index: 0;
+}
+
+.hero-content {
+position: relative;
+z-index: 1;
+}
+
+.hero h1 {
+font-weight: 800;
+font-size: 3rem;
+color: var(--blue-dark);
+line-height: 1.2;
+margin-bottom: 1.5rem;
+}
+
+.hero p {
+color: var(--gray);
+max-width: 600px;
+font-size: 1.2rem;
+margin-bottom: 2rem;
+}
+
+section {
+padding: 100px 0;
+position: relative;
+}
+
+h2.section-title {
+color: var(--blue-dark);
+font-weight: 800;
+margin-bottom: 20px;
+font-size: 2.5rem;
+position: relative;
+display: inline-block;
+}
+
+h2.section-title:after {
+content: '';
+position: absolute;
+width: 60%;
+height: 4px;
+bottom: -10px;
+left: 0;
+background: linear-gradient(90deg, var(--blue), transparent);
+border-radius: 2px;
+}
+
+.text-muted {
+color: #5f6b7c !important;
+font-size: 1.1rem;
+}
+
+.feature-card {
+background: #ffffff;
+border-radius: 12px;
+padding: 30px 25px;
+box-shadow: 0 8px 30px rgba(0, 51, 120, 0.08);
+transition: var(--transition);
+height: 100%;
+border-top: 4px solid transparent;
+}
+
+.feature-card:hover {
+transform: translateY(-10px);
+box-shadow: 0 15px 40px rgba(0, 51, 120, 0.15);
+border-top: 4px solid var(--blue);
+}
+
+.feature-icon {
+background: var(--blue-lite);
+width: 70px;
+height: 70px;
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+margin-bottom: 20px;
+transition: var(--transition);
+}
+
+.feature-card:hover .feature-icon {
+background: var(--blue);
+transform: scale(1.1);
+}
+
+.feature-card:hover .feature-icon i {
+color: white !important;
+}
+
+.list-group-item {
+border: none;
+padding: 15px 20px;
+margin-bottom: 10px;
+border-radius: 8px !important;
+background: var(--blue-lite);
+transition: var(--transition);
+}
+
+.list-group-item:hover {
+background: var(--blue);
+color: white;
+transform: translateX(5px);
+}
+
+footer {
+background: var(--blue-dark);
+color: #ffffff;
+padding-top: 60px;
+}
+
+footer a {
+color: #ffffff;
+transition: var(--transition);
+text-decoration: none;
+}
+
+footer a:hover {
+color: #EAF6FF;
+text-decoration: underline;
+}
+
+.social-icons a {
+display: inline-flex;
+align-items: center;
+justify-content: center;
+width: 40px;
+height: 40px;
+border-radius: 50%;
+background: rgba(255, 255, 255, 0.1);
+margin-right: 10px;
+transition: var(--transition);
+}
+
+.social-icons a:hover {
+background: var(--blue);
+transform: translateY(-3px);
+}
+
+/* Animaciones */
+@keyframes fadeInUp {
+from {
+    opacity: 0;
+    transform: translateY(30px);
+}
+to {
+    opacity: 1;
+    transform: translateY(0);
+}
+}
+
+.fade-in {
+animation: fadeInUp 0.8s ease forwards;
+}
+
+.delay-1 {
+animation-delay: 0.2s;
+}
+
+.delay-2 {
+animation-delay: 0.4s;
+}
+
+.delay-3 {
+animation-delay: 0.6s;
+}
+
+/* Mejoras para el formulario */
+.form-control {
+border-radius: 8px;
+padding: 12px 15px;
+border: 1px solid #e2e8f0;
+transition: var(--transition);
+}
+
+.form-control:focus {
+border-color: var(--blue);
+box-shadow: 0 0 0 3px rgba(10, 117, 209, 0.1);
+}
+
+/* Indicadores del carousel personalizados */
+.carousel-indicators {
+bottom: -50px;
+}
+
+.carousel-indicators li {
+width: 12px;
+height: 12px;
+border-radius: 50%;
+background-color: #cbd5e0;
+transition: var(--transition);
+}
+
+.carousel-indicators .active {
+background-color: var(--blue);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+.hero h1 {
+    font-size: 2.2rem;
+}
+
+.hero p {
+    font-size: 1rem;
+}
+
+h2.section-title {
+    font-size: 2rem;
+}
+
+section {
+    padding: 70px 0;
+}
+}
