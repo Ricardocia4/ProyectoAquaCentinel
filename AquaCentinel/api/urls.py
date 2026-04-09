@@ -3,7 +3,6 @@ from . import views
 
 app_name = "sensores"
 urlpatterns = [
-    path("", views.inicio),
     path("boyas", views.boyas),
     path("sensores", views.registroDeSensores, name="sensores"),
     path("boya/diagnostico/<str:id>", views.diagnostico, name="diagnostico"),

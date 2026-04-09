@@ -17,7 +17,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Rutas para redirección
-LOGIN_REDIRECT_URL = "/"
+LOGIN_REDIRECT_URL = "web:dashboard"
 LOGOUT_REDIRECT_URL = "/"
 
 # Quick-start development settings - unsuitable for production
