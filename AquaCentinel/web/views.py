@@ -1,15 +1,15 @@
 from django.shortcuts import render
+from django.shortcuts import redirect
 
 
 def inicio(request):
-    # Nota que ahora incluimos "web/" en la ruta del template
     return render(request, "web/index.html")
 
 
-# esta es la funcion de las boyas para la api activa pero no se usa odavia y no se va usar por ahora
-
-
 def dashboard(request):
+    if request.user.is_staff:
+        # Si es admin, lo mandamos directo al CRUD de boyas en el panel
+        return redirect("/admin/")
     return render(request, "web/dashboard.html")  # O la que quieras de inicio
 
 
@@ -23,4 +23,4 @@ def detalle_boya(request):
 
 # Vistas de invitado (Login/Register)
 def login_view(request):
-    return render(request, "web/login.html")  # Asegúrate de que el nombre coincida
+    return render(request, "web/login.html")
