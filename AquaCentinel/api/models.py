@@ -6,8 +6,8 @@ import uuid
 
 class Boya(models.Model):
     # 'editable=False' lo oculta de los formularios por defecto
-    class Meta:
-        db_table = "sensores_boya"
+    # class Meta:
+    #     db_table = "sensores_boya"
 
     codigo_boya = models.CharField(max_length=100, unique=True, editable=True)
     usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)

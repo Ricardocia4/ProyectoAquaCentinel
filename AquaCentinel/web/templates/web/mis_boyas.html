@@ -23,12 +23,14 @@
 
                 <div class="card-body p-4">
                     <div class="d-flex align-items-center mb-4">
-                        <div class="bg-success rounded-circle me-2 animate-pulse" style="width: 10px; height: 10px;"></div>
+                        <div class="bg-success rounded-circle me-2 animate-pulse" style="width: 10px; height: 10px;">
+                        </div>
                         <span class="small fw-bold text-success text-uppercase">En línea</span>
                     </div>
 
                     <div class="mb-4">
-                        <p class="small text-muted fw-bold text-uppercase mb-2" style="letter-spacing: 0.05em;">Último mantenimiento</p>
+                        <p class="small text-muted fw-bold text-uppercase mb-2" style="letter-spacing: 0.05em;">Último
+                            mantenimiento</p>
                         <div class="d-flex align-items-center">
                             <i class="fas fa-calendar-alt text-primary me-2"></i>
                             <span class="fw-semibold text-dark">2025-01-15</span>
@@ -47,7 +49,8 @@
                     </div>
 
                     <div class="d-flex gap-2 mt-4">
-                        <a href="{% url 'web:detalle_boya' %}" class="btn btn-primary flex-grow-1 fw-bold py-3 rounded-3 shadow-sm">
+                        <a href="{% url 'web:detalle_boya' %}"
+                            class="btn btn-primary flex-grow-1 fw-bold py-3 rounded-3 shadow-sm">
                             <i class="fas fa-chart-line me-2"></i> Ver Dashboard
                         </a>
                         <button class="btn btn-light border py-3 px-3 rounded-3">
@@ -57,7 +60,7 @@
                 </div>
             </div>
         </div>
-        </div>
+    </div>
 
     <div class="card border-0 shadow-sm rounded-5 overflow-hidden">
         <div class="card-header border-0 p-4 p-md-5" style="background-color: #f1f7ff;">
@@ -67,28 +70,34 @@
                 </div>
                 <div>
                     <h3 class="fw-black text-dark mb-1">Sincronizar Nueva Boya</h3>
-                    <p class="text-primary fw-semibold mb-0">Vincula una nueva boya a tu cuenta usando el código único</p>
+                    <p class="text-primary fw-semibold mb-0">Vincula una nueva boya a tu cuenta usando el código único
+                    </p>
                 </div>
             </div>
         </div>
 
         <div class="card-body p-4 p-md-5">
-            <form class="row g-4 align-items-end" style="max-width: 800px;">
+            <form class="row g-4 align-items-end" style="max-width: 800px;" id="sync_form"
+                action="{% url 'api:misBoyas'%}" method="POST">
                 <div class="col-12 col-md-8">
+                    {% csrf_token %}
                     <label class="form-label fw-bold text-dark fs-5 mb-3">
                         <i class="fas fa-qrcode text-primary me-2"></i> Código de la Boya
                     </label>
-                    <input type="text"
-                           placeholder="Ejemplo: BYA-2025-XYZ-123"
-                           class="form-control form-control-lg border-2 bg-light rounded-4 px-4 py-3 shadow-none focus-ring"
-                           style="--bs-focus-ring-color: rgba(13, 110, 253, 0.1)">
+                    <input type="text" placeholder="Ejemplo: AQUA-A1B2C3D4"
+                        class="form-control form-control-lg border-2 bg-light rounded-4 px-4 py-3 shadow-none focus-ring"
+                        style="--bs-focus-ring-color: rgba(13, 110, 253, 0.1)"
+                        name="codigo_boya"
+                        required>
                 </div>
                 <div class="col-12 col-md-4">
-                    <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold py-3 rounded-4 shadow-lg border-0 transition-all">
+                    <button type="submit" id="submit_btn"
+                        class="btn btn-primary btn-lg w-100 fw-bold py-3 rounded-4 shadow-lg border-0 transition-all">
                         <i class="fas fa-sync-alt me-2"></i> Sincronizar
                     </button>
                 </div>
             </form>
+            <p id="message">La boya no ha hecho nada, no se ha presionado el botón.</p>
         </div>
     </div>
 </div>
@@ -97,18 +106,64 @@
     /* Efecto hover para las tarjetas */
     .shadow-hover:hover {
         transform: translateY(-5px);
-        box-shadow: 0 1rem 3rem rgba(0,0,0,.1) !important;
+        box-shadow: 0 1rem 3rem rgba(0, 0, 0, .1) !important;
     }
 
-    .fw-black { font-weight: 900 !important; }
+    .fw-black {
+        font-weight: 900 !important;
+    }
 
     .animate-pulse {
         animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
 
     @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: .5; }
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: .5;
+        }
     }
 </style>
+
+<script>
+    const form = document.getElementById('sync_form');
+    const submit_btn = document.getElementById('submit_btn');
+    const message = document.getElementById('message');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        submit_btn.disabled = true;
+
+        const formData = new FormData(form);
+        message.innerText = "Esperando respuesta...";
+
+        try {
+            const response = await fetch(form.action, {
+                method: form.method,
+                body: formData
+            });
+
+            if (response.ok) {
+                const resultado = await response.text();
+                message.innerText = "Boya Vinculada con éxito.";
+                form.reset();
+                submit_btn.disabled = false;
+            } else {
+                msg = await response.json()
+                message.innerText = msg.message;
+                submit_btn.disabled = false;
+            }
+
+        } catch (error) {
+            console.log(error)
+        }
+
+    });
+</script>
 {% endblock %}

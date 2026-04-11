@@ -2,7 +2,7 @@ import json
 from django.core import serializers
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse
-from .models import RegistroSensor
+from .models import RegistroSensor, Boya
 
 # Se incluyen los formularios que serán usados como el "validator" de Laravel
 from .forms import BoyaForm, RegistroSensorForm
@@ -11,9 +11,41 @@ from django.views.decorators.csrf import (
 )  # Solo para pruebas. Eliminar en producción y todas sus invocaciones.
 
 
-# def inicio(request):
-#     return render(request, "index.html")
+@csrf_exempt
+def misBoyas(request):
+    # Este endpoint retorna todas las boyas del usuario y tambien las vincula a él
+    if request.method == "GET":
+        return HttpResponse("ola")
+    
+    if request.method == "POST":
+        boya = None
+        codigo_boya = request.POST.get('codigo_boya')
 
+        try:
+            boya = Boya.objects.get(codigo_boya=codigo_boya)
+
+        except Boya.DoesNotExist:
+            return JsonResponse(
+                {"success": False, "message": "El código no corresponde a ninguna boya"},
+                status=404,
+            )
+        except Exception as e:
+            print(f"error: {e}")
+            return JsonResponse({"success": False, "message": "Algo salió mal"}, status=500)
+        
+    print(f"Usuario : {boya.usuario}")
+
+    if boya.usuario is not None:
+        return JsonResponse({"success": False, "message": "Esta boya ya está vinculada a un usuario."}, status=409)
+    
+
+    try:
+        boya.usuario = request.user
+        boya.save()
+        return JsonResponse({"success": True, "message": "Boya vinculada con éxito"})
+    except Exception as e:
+        print(f"error: {e}")
+        return JsonResponse({"success": False, "message": "Algo salió mal"}, status=500)
 
 @csrf_exempt
 def boyas(request):
