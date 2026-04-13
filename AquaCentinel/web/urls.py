@@ -13,5 +13,5 @@ urlpatterns = [
     # 3. LAS BOYAS
     path("mis-boyas/", views.mis_boyas, name="mis_boyas"),
     # 4. EL DETALLE
-    path("boya-detalle/", views.detalle_boya, name="detalle_boya"),
+    path("boya-detalle/<int:id>", views.detalle_boya, name="detalle_boya"),
 ]

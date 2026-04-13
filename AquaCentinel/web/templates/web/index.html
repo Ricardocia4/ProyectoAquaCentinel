@@ -41,7 +41,7 @@
           <li class="nav-item"><a class="nav-link" href="#boya">La Boya</a></li>
           <li class="nav-item"><a class="nav-link" href="#contact">Contacto</a></li>
           {% if user.is_authenticated %}
-          <li class="nav-item"><a class="nav-link" href="">Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'web:dashboard' %}">Dashboard</a></li>
           <li class="nav-item">
             <form action="{% url 'logout' %}" method="post">
             {% csrf_token %}

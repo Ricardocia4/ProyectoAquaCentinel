@@ -17,8 +17,11 @@ def mis_boyas(request):
     return render(request, "web/mis_boyas.html")
 
 
-def detalle_boya(request):
-    return render(request, "web/detalle_boya.html")
+def detalle_boya(request, id):
+    datos = { # Es un diccionario porque, si hace falta enviar más datos, no afectará la estructura de los demás.
+        'id': id
+    }
+    return render(request, "web/detalle_boya.html", datos)
 
 
 # Vistas de invitado (Login/Register)

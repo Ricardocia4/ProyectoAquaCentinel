@@ -11,6 +11,7 @@ class Boya(models.Model):
 
     codigo_boya = models.CharField(max_length=100, unique=True, editable=True)
     usuario = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    descripcion = models.CharField(max_length=255, null=True, blank=True)
 
     def save(self, *args, **kwargs):
         # Solo generamos el código si la boya es nueva (no tiene ID aún)

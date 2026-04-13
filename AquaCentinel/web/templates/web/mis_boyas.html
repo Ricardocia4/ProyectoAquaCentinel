@@ -8,58 +8,8 @@
         <p class="text-secondary fs-5">Gestiona y monitorea todas tus boyas AquaSentinel en un solo lugar</p>
     </div>
 
-    <div class="row g-4 mb-5">
-        <div class="col-12 col-md-6 col-xl-4">
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100 shadow-hover transition-all">
-                <div class="p-4 text-white" style="background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <h4 class="fw-bold mb-0">Boyacenter Alpha</h4>
-                            <p class="small opacity-75 mb-0">Modelo: OceanGuard Pro</p>
-                        </div>
-                        <span class="badge bg-white bg-opacity-25 rounded-pill px-3 py-2">Activa</span>
-                    </div>
-                </div>
+    <div class="row g-4 mb-5" id="boyas_container">
 
-                <div class="card-body p-4">
-                    <div class="d-flex align-items-center mb-4">
-                        <div class="bg-success rounded-circle me-2 animate-pulse" style="width: 10px; height: 10px;">
-                        </div>
-                        <span class="small fw-bold text-success text-uppercase">En línea</span>
-                    </div>
-
-                    <div class="mb-4">
-                        <p class="small text-muted fw-bold text-uppercase mb-2" style="letter-spacing: 0.05em;">Último
-                            mantenimiento</p>
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-calendar-alt text-primary me-2"></i>
-                            <span class="fw-semibold text-dark">2025-01-15</span>
-                        </div>
-                    </div>
-
-                    <div class="row g-0 border-top pt-3 text-center">
-                        <div class="col-6 border-end">
-                            <p class="h4 fw-black text-primary mb-0">7.2</p>
-                            <p class="small text-muted mb-0">pH</p>
-                        </div>
-                        <div class="col-6">
-                            <p class="h4 fw-black text-success mb-0">25°C</p>
-                            <p class="small text-muted mb-0">Temp</p>
-                        </div>
-                    </div>
-
-                    <div class="d-flex gap-2 mt-4">
-                        <a href="{% url 'web:detalle_boya' %}"
-                            class="btn btn-primary flex-grow-1 fw-bold py-3 rounded-3 shadow-sm">
-                            <i class="fas fa-chart-line me-2"></i> Ver Dashboard
-                        </a>
-                        <button class="btn btn-light border py-3 px-3 rounded-3">
-                            <i class="fas fa-cog text-secondary"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <div class="card border-0 shadow-sm rounded-5 overflow-hidden">
@@ -86,9 +36,7 @@
                     </label>
                     <input type="text" placeholder="Ejemplo: AQUA-A1B2C3D4"
                         class="form-control form-control-lg border-2 bg-light rounded-4 px-4 py-3 shadow-none focus-ring"
-                        style="--bs-focus-ring-color: rgba(13, 110, 253, 0.1)"
-                        name="codigo_boya"
-                        required>
+                        style="--bs-focus-ring-color: rgba(13, 110, 253, 0.1)" name="codigo_boya" required>
                 </div>
                 <div class="col-12 col-md-4">
                     <button type="submit" id="submit_btn"
@@ -131,6 +79,14 @@
 </style>
 
 <script>
+    const URL = "{% url 'web:detalle_boya' 0%}";
+    window.addEventListener('load', (event) => {
+        // Aquí se inicializan las funciones necesarias.
+
+        getBoyas();
+    });
+
+
     const form = document.getElementById('sync_form');
     const submit_btn = document.getElementById('submit_btn');
     const message = document.getElementById('message');
@@ -165,5 +121,89 @@
         }
 
     });
+</script>
+
+<script>
+var dat;
+    const container = document.getElementById('boyas_container');
+
+    async function getBoyas(){
+        const response = await fetch('/api/mis-boyas', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            console.log("Proceso exitoso.");
+            for(i=0; i < data.length; i++){
+                console.log(data[i])
+                createCard(data[i]);
+            }
+        } else {
+            console.log("Error: " + data.message);
+        }
+
+        
+
+    }
+
+    function createCard(boya) {
+        var card = document.createElement('div');
+        card.classList.add("col-12", "col-md-6", "col-xl-4")
+        card.innerHTML = `<div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100 shadow-hover transition-all">
+                                <div class="p-4 text-white" style="background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h4 class="fw-bold mb-0">Boyacenter Alpha</h4>
+                                            <p class="small opacity-75 mb-0">Codigo: ${boya.codigo_boya}</p>
+                                        </div>
+                                        <span class="badge bg-white bg-opacity-25 rounded-pill px-3 py-2">Activa</span>
+                                    </div>
+                                </div>
+
+                                <div class="card-body p-4">
+                                    <div class="d-flex align-items-center mb-4">
+                                        <div class="bg-success rounded-circle me-2 animate-pulse" style="width: 10px; height: 10px;">
+                                        </div>
+                                        <span class="small fw-bold text-success text-uppercase">En línea</span>
+                                    </div>
+
+                                    <div class="mb-4">
+                                        <p class="small text-muted fw-bold text-uppercase mb-2" style="letter-spacing: 0.05em;">Descripción</p>
+                                        <p class="small text-muted fw-bold text-uppercase mb-2" style="letter-spacing: 0.05em;">
+                                            ${boya.descripcion == null ? "Sin descripción..." : boya.descripcion}
+                                        </p>
+                                    </div>
+
+                                    <div class="row g-0 border-top pt-3 text-center">
+                                        <div class="col-6 border-end">
+                                            <p class="h4 fw-black text-primary mb-0">${boya.registro.ph == null ? "-" : boya.registro.ph}</p>
+                                            <p class="small text-muted mb-0">pH</p>
+                                        </div>
+                                        <div class="col-6">
+                                            <p class="h4 fw-black text-success mb-0">${boya.registro.temperatura == null ? "-" : boya.registro.temperatura}°C</p>
+                                            <p class="small text-muted mb-0">Temp</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex gap-2 mt-4">
+                                        <a href="${URL.replace('0', boya.id)}"
+                                            class="btn btn-primary flex-grow-1 fw-bold py-3 rounded-3 shadow-sm">
+                                            <i class="fas fa-chart-line me-2"></i> Ver Dashboard
+                                        </a>
+                                        <button class="btn btn-light border py-3 px-3 rounded-3">
+                                            <i class="fas fa-cog text-secondary"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>`
+
+        container.appendChild(card);
+    }
 </script>
 {% endblock %}
