@@ -5,6 +5,10 @@ from django.http import HttpResponse, JsonResponse
 from .models import RegistroSensor, Boya
 from django.forms.models import model_to_dict
 
+# Estos imports son para los sockets
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+
 # Se incluyen los formularios que serán usados como el "validator" de Laravel
 from .forms import BoyaForm, RegistroSensorForm
 from django.views.decorators.csrf import (
@@ -121,6 +125,19 @@ def registroDeSensores(request):
         if form.is_valid():
             try:
                 registro = form.save()
+                # Aquí se hace un "emit"
+                data["fecha_creacion"] = f"{registro.fecha_creacion}"
+                channel_layer = get_channel_layer()
+
+                async_to_sync(channel_layer.group_send)(
+                    f'{data["boya"]}',  # Nombre del grupo (ID de boya)
+                    {
+                        'type': 'send_new_data', # Nombre del método en el consumidor
+                        'data': data,
+                    }
+                )
+
+
                 return JsonResponse(
                     {
                         "success": True,

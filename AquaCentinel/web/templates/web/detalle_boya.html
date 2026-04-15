@@ -519,4 +519,23 @@
     }
 
 </script>
+
+<script>
+    // Script para gestionar la conexión a websockets 
+
+    
+    const chatSocket = new WebSocket(
+        'ws://' + window.location.host + '/ws/chat/' + ID + '/'
+    );
+
+
+    chatSocket.onclose = function(e) {
+        console.error('Chat socket cerrado inesperadamente');
+    };
+
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        console.log("Mensaje recibido: ", data);
+    };
+</script>
 {% endblock %}
