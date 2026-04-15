@@ -231,6 +231,8 @@
         });
     });
 </script>
+
+<!-- Datos históricos -->
 <script>
     // Este scrip funciona únicamente para los datos históricos.
     // Son muchos, así que sino se abre la pestaña, no cargan.
@@ -307,7 +309,7 @@
 
 </script>
 
-
+<!-- Gráficas -->
 <script>
     // El flujo ideal para actualizar los gráficos sería modificar las variables que
     // están abajo, después, invocar la función updateChartsOptions() que tomará
@@ -319,7 +321,7 @@
 
     const commonOptions = {
         chart: { height: 280, type: 'area', toolbar: { show: false }, zoom: { enabled: false }, fontFamily: 'Inter, sans-serif' },
-        dataLabels: { enabled: false },
+        dataLabels: { enabled: true }, // Regresar a FALSE
         stroke: { curve: 'smooth', width: 3 },
         xaxis: {
             categories: ['11am', '12pm', '1pm', '2pm', '3pm', '4pm', '5pm'],
@@ -424,8 +426,30 @@
         });
     }
 
+    // La cantidad màxima de valores por gráfica.
+    const maxValues = 15;
+
+    function updateChartsData(data){
+        ph.unshift(data.ph);
+        temperatura.unshift(data.temperatura);
+        turbidez.unshift(data.turbidez);
+        conductividad.unshift(data.conductividad);
+        fecha_creacion.unshift(data.fecha_creacion);
+
+        if(ph.length > maxValues){
+            ph.pop();
+            temperatura.pop();
+            turbidez.pop();
+            conductividad.pop();
+            fecha_creacion.pop();
+        }
+
+        updateChartsOptions();
+        
+    }
 </script>
 
+<!-- Diagnóstico -->
 <script>
     // Script de diagnóstico. Lo ideal sería que se extraiga desde los registros recientes para no hacer una doble consulta.
     // También hay que esperar que los sockets envien la información con el diagnóstico para tener evitar otra consulta.
@@ -520,9 +544,10 @@
 
 </script>
 
+<!-- Sockets -->
 <script>
     // Script para gestionar la conexión a websockets 
-
+    const tst = {boya: 1, ph: 9, temperatura: 25, conductividad: 400, turbidez: 0.3}
     
     const chatSocket = new WebSocket(
         'ws://' + window.location.host + '/ws/chat/' + ID + '/'
@@ -536,6 +561,7 @@
     chatSocket.onmessage = function(e) {
         const data = JSON.parse(e.data);
         console.log("Mensaje recibido: ", data);
+        updateChartsData(data);
     };
 </script>
 {% endblock %}
