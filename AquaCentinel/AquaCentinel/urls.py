@@ -14,13 +14,36 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
-from django.urls import path, include
+
+# from django.urls import path, include
 from django.views.generic.base import TemplateView
 
+# urlpatterns = [
+#     path("admin/", admin.site.urls),
+#     path("", include("api.urls")),
+#     path("accounts/", include("accounts.urls")),  # App para registros. NO BORRAR
+#     path(
+#         "accounts/", include("django.contrib.auth.urls")
+#     ),  # App Django para autenticación
+# ]
+from django.urls import path, include
+from django.views.generic.base import RedirectView
+from django.contrib.staticfiles.storage import staticfiles_storage
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', include('sensores.urls')),
-    path("accounts/", include("accounts.urls")),  # App para registros. NO BORRAR
-    path("accounts/", include("django.contrib.auth.urls")), # App Django para autenticación
+    path("admin/", admin.site.urls),
+    # La raíz "" ahora apunta a WEB, no a API
+    path("", include("web.urls", namespace="web")),
+    # La API ahora solo se encarga de rutas que empiecen con /api/
+    path("api/", include("api.urls")),
+    path("accounts/", include("accounts.urls")),
+    path("accounts/", include("django.contrib.auth.urls")),
+    path(
+        "favicon.ico",
+        RedirectView.as_view(
+            url=staticfiles_storage.url("web/img/icon-aquacentinel.png")
+        ),
+    ),
 ]

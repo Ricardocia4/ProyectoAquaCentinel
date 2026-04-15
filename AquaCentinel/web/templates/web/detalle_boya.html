@@ -1,0 +1,522 @@
+{% extends 'web/base_dashboard.html' %}
+{% block title %}Monitor: Boyacenter Alpha{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="mb-4">
+        <a href="{% url 'web:mis_boyas' %}" class="text-decoration-none fw-bold mb-4 d-inline-block transition-all hover-translate">
+            <i class="fas fa-arrow-left me-2"></i> Volver a mis boyas
+        </a>
+
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center" id="boya_div">
+                <div>
+                    <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+                        <h1 class="h2 fw-black text-dark mb-0">Boyacenter Alpha</h1>
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle uppercase px-2 py-1">ID: BYA-001</span>
+                    </div>
+                    <p class="text-secondary mb-0">
+                        <i class="fas fa-location-dot me-2 text-danger"></i>Estación de monitoreo: Sector Norte
+                    </p>
+                </div>
+                <div class="mt-3 mt-md-0">
+                    <span class="badge bg-success-subtle text-success p-2 px-4 rounded-pill border border-success-subtle shadow-sm">
+                        <i class="fas fa-circle me-2 animate-pulse"></i> Transmitiendo en vivo
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs border-0 gap-2 mb-4" id="monitorTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active custom-tab" id="realtime-tab" data-bs-toggle="tab" data-bs-target="#realtime-content" type="button" role="tab">
+                <i class="fas fa-chart-line me-2"></i>Tiempo Real
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link custom-tab" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-content" type="button" role="tab">
+                <i class="fas fa-clock-rotate-left me-2"></i>Historial de Datos
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="monitorTabsContent">
+        <div class="tab-pane fade show active" id="realtime-content" role="tabpanel">
+            <div class="card border-0 shadow-sm rounded-4 border-start border-5 border-success mb-4">
+                <div class="card-body p-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-1">Diagnóstico de Calidad del Agua</h5>
+                        <p class="h5 text-success fw-black mb-1">ESTADO ÓPTIMO — Parámetros seguros</p>
+                        <p class="small text-muted fst-italic mb-0">Basado en la última lectura de hace unos segundos.</p>
+                    </div>
+                    <i class="fas fa-shield-check text-success opacity-25 d-none d-md-block" style="font-size: 3.5rem;"></i>
+                </div>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-6 col-lg-3" id="last_ph">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 border-top border-4 border-primary h-100">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="bg-primary-subtle text-primary p-2 rounded-3"><i class="fas fa-flask"></i></div>
+                            <span class="badge bg-success-subtle text-success rounded-pill align-self-center">Normal</span>
+                        </div>
+                        <p class="small fw-bold text-muted text-uppercase mb-1 tracking-wider">pH</p>
+                        <h2 class="fw-black mb-0">- <small class="fs-6 text-muted fw-normal">pH</small></h2>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3" id="last_temp">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 border-top border-4 border-warning h-100">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="bg-warning-subtle text-warning p-2 rounded-3"><i class="fas fa-thermometer-half"></i></div>
+                            <span class="badge bg-success-subtle text-success rounded-pill align-self-center">Estable</span>
+                        </div>
+                        <p class="small fw-bold text-muted text-uppercase mb-1 tracking-wider">Temperatura</p>
+                        <h2 class="fw-black mb-0">- <small class="fs-6 text-muted fw-normal">°C</small></h2>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3" id="last_tds">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 border-top border-4 border-info h-100">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="bg-info-subtle text-info p-2 rounded-3"><i class="fas fa-vial"></i></div>
+                            <span class="badge bg-success-subtle text-success rounded-pill align-self-center">Limpio</span>
+                        </div>
+                        <p class="small fw-bold text-muted text-uppercase mb-1 tracking-wider">TDS (Sólidos)</p>
+                        <h2 class="fw-black mb-0">- <small class="fs-6 text-muted fw-normal">ppm</small></h2>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3" id="last_turb">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 border-top border-4 border-indigo h-100">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="bg-indigo-subtle text-indigo p-2 rounded-3"><i class="fas fa-eye-dropper"></i></div>
+                            <span class="badge bg-success-subtle text-success rounded-pill align-self-center">Claro</span>
+                        </div>
+                        <p class="small fw-bold text-muted text-uppercase mb-1 tracking-wider">Turbidez</p>
+                        <h2 class="fw-black mb-0">- <small class="fs-6 text-muted fw-normal">NTU</small></h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-12 col-lg-6">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+                        <h6 class="fw-bold mb-4 text-dark"><i class="fas fa-flask text-primary me-2"></i>Variación de pH</h6>
+                        <div id="chart-ph"></div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-6">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+                        <h6 class="fw-bold mb-4 text-dark"><i class="fas fa-temperature-half text-warning me-2"></i>Temperatura (°C)</h6>
+                        <div id="chart-temp"></div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-6">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+                        <h6 class="fw-bold mb-4 text-dark"><i class="fas fa-vial text-info me-2"></i>Sólidos (TDS)</h6>
+                        <div id="chart-tds"></div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-6">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+                        <h6 class="fw-bold mb-4 text-dark"><i class="fas fa-eye-dropper text-indigo me-2"></i>Turbidez (NTU)</h6>
+                        <div id="chart-turbidez"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="history-content" role="tabpanel">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-white p-4 border-0 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                    <h5 class="fw-black text-primary mb-0">Historial de Mediciones</h5>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-light border btn-sm px-3 rounded-pill fw-bold"><i class="fas fa-filter me-2"></i>Filtrar</button>
+                        <button class="btn btn-primary btn-sm px-3 rounded-pill fw-bold"><i class="fas fa-download me-2"></i>Exportar</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr class="small text-uppercase fw-black text-muted tracking-wider">
+                                <th class="ps-4 py-3">Fecha y Hora</th>
+                                <th class="text-center">pH</th>
+                                <th class="text-center">Temp.</th>
+                                <th class="text-center">TDS (ppm)</th>
+                                <th class="text-center">Turbidez</th>
+                                <th class="pe-4 text-end">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historic">
+                            <tr>
+                                <td class="ps-4 py-3 fw-bold text-dark">09/04/2026 17:00</td>
+                                <td class="text-center font-monospace">7.42</td>
+                                <td class="text-center font-monospace">24.5 °C</td>
+                                <td class="text-center font-monospace text-info">120</td>
+                                <td class="text-center font-monospace">2.1</td>
+                                <td class="pe-4 text-end"><span class="badge bg-success-subtle text-success p-2 px-3 rounded-pill">ÓPTIMO</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Estilo para las pestañas (Chrome Style Corregido) */
+    .custom-tab {
+        background-color: #e2e8f0 !important;
+        color: #64748b !important;
+        border: none !important;
+        border-radius: 12px 12px 0 0 !important;
+        padding: 10px 25px !important;
+        font-weight: 700 !important;
+        margin-bottom: -1px;
+        box-shadow: none !important;
+    }
+    .custom-tab:hover {
+        background-color: #cbd5e1 !important;
+        color: #1e293b !important;
+    }
+    .custom-tab.active {
+        background-color: #fff !important;
+        color: #0d6efd !important;
+        box-shadow: 0 -4px 10px rgba(0,0,0,0.05) !important;
+        border-bottom: 3px solid #0d6efd !important;
+    }
+
+    .fw-black { font-weight: 900 !important; }
+    .animate-pulse { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+    const ID = "{{ id }}";
+    const monitorTabsContent = document.getElementById('monitorTabsContent');
+    const boya_div = document.getElementById('boya_div');
+
+    window.addEventListener('load', (event) => {
+        // Aquí se inicializan las funciones necesarias.
+        // Información de la boya. Ya le falta una optimizada a todo esto.
+        
+        fetch(`/api/boya/${ID}/info`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+        }).then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        }).then(data => {
+
+            boya_div.querySelector('h1').innerText = data.codigo_boya;
+            boya_div.querySelector('p').innerText = data.descripcion == null ? 'Sin descripción...' : data.descripcion;
+            boya_div.querySelector('span').innerText = `ID: ${data.id}`;
+            
+            lastDiagnostic();
+            initChart();
+
+        }).catch(error => {
+
+            // Si la boya no se encuentra, o su búsqueda falla por algo, se cortan los demás procesos.
+            console.log(error);
+            console.log("algo salió mal")
+        });
+    });
+</script>
+<script>
+    // Este scrip funciona únicamente para los datos históricos.
+    // Son muchos, así que sino se abre la pestaña, no cargan.
+    const historic = document.getElementById('historic');
+    var active = false;
+
+    document.getElementById('history-tab').addEventListener('click', async function(){
+        if(active)
+            return;
+
+        active = true;
+
+        const response = await fetch(`/api/boya/${ID}/historico`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            console.log("Proceso exitoso.");
+            var Tbody = "";
+            for(i=0; i < data.length; i++){
+                console.log(data[i])
+                Tbody += createHTMLRow(data[i]);
+            }
+
+            historic.innerHTML = Tbody;
+        } else {
+            console.log("Error: " + data.message);
+        }
+    });
+
+    function createHTMLRow(data){
+        return `
+        <tr>
+            <td class="ps-4 py-3 fw-bold text-dark">${ISOdateFormat(data.fecha_creacion)}</td>
+            <td class="text-center font-monospace">${data.ph}</td>
+            <td class="text-center font-monospace">${data.temperatura} °C</td>
+            <td class="text-center font-monospace">${data.conductividad}</td>
+            <td class="text-center font-monospace">${data.turbidez}</td>
+            <td class="pe-4 text-end"><span class="badge bg-success-subtle text-success p-2 px-3 rounded-pill">ÓPTIMO</span></td>
+        </tr>
+        `
+    }
+
+    function ISOdateFormat(ISOdate){
+        date = new Date(ISOdate);
+
+        return date.toLocaleString();
+    }
+
+    function relativeTime(fechaPasada) {
+        const ahora = new Date();
+        const diferenciaMs = ahora - fechaPasada;
+        const segundos = Math.floor(diferenciaMs / 1000);
+        const minutos = Math.floor(segundos / 60);
+
+        if (segundos < 1) return "de ahora mismo";
+        if (segundos < 60) return `de hace ${segundos} seg`;
+        if (minutos < 60) return `de hace ${minutos} min`;
+        
+        // Quizá se vea redundante llamar a la función ISO...
+        // pero si se modifica el formato de la fecha, esto 
+        // asegura que todos tengan el mismo formato.
+        return `del ${ISOdateFormat(fechaPasada)}`;
+    }
+
+
+
+
+</script>
+
+
+<script>
+    // El flujo ideal para actualizar los gráficos sería modificar las variables que
+    // están abajo, después, invocar la función updateChartsOptions() que tomará
+    // las mismas variables y actualizará el gráfico con la nueva información.
+
+
+    var ph; var temperatura; var turbidez; var conductividad; var fecha_creacion;
+
+
+    const commonOptions = {
+        chart: { height: 280, type: 'area', toolbar: { show: false }, zoom: { enabled: false }, fontFamily: 'Inter, sans-serif' },
+        dataLabels: { enabled: false },
+        stroke: { curve: 'smooth', width: 3 },
+        xaxis: {
+            categories: ['11am', '12pm', '1pm', '2pm', '3pm', '4pm', '5pm'],
+            labels: { style: { colors: '#94a3b8' }},
+            type: 'datetime',
+        },
+        tooltip: {x: {formatter: function(value) {return ISOdateFormat(value);}}        },
+        fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.1 } }
+    };
+
+    // Gráfica de pH
+    var chart_ph = new ApexCharts(document.querySelector("#chart-ph"), {
+        ...commonOptions,
+        colors: ['#0d6efd'],
+        series: [{ name: 'pH', data: [7.2, 7.3, 7.5, 7.4, 7.4, 7.3, 7.42] }],
+        yaxis: { min: 0, max: 14 },
+        annotations: {
+            yaxis: [
+                { y: 0, y2: 6.5, fillColor: '#EF4444', opacity: 0.1, label: { text: 'Ácido', style: { color: '#EF4444' } } },
+                { y: 6.5, y2: 8.5, fillColor: '#10B981', opacity: 0.1, label: { text: 'Óptimo', style: { color: '#10B981' } } },
+                { y: 8.5, y2: 14, fillColor: '#EF4444', opacity: 0.1, label: { text: 'Alcalino', style: { color: '#EF4444' } } }
+            ]
+        }
+    });
+    // Gráfica de Temperatura
+    var chart_temperatura = new ApexCharts(document.querySelector("#chart-temp"), {
+        ...commonOptions,
+        colors: ['#ffc107'],
+        series: [{ name: 'Temperatura', data: [22, 23, 25, 26, 25, 24, 24.5] }],
+        yaxis: { min: 0, max: 50 },
+        annotations: {
+            yaxis: [
+                { y: 20, y2: 28, fillColor: '#10B981', opacity: 0.1, label: { text: 'Óptimo' } },
+                { y: 28, y2: 50, fillColor: '#EF4444', opacity: 0.1, label: { text: 'Caliente' } }
+            ]
+        }
+    });
+    // Gráfica de TDS
+    var chart_tds = new ApexCharts(document.querySelector("#chart-tds"), {
+        ...commonOptions,
+        colors: ['#0dcaf0'],
+        series: [{ name: 'TDS (ppm)', data: [110, 115, 120, 118, 122, 120, 120] }],
+        yaxis: { min: 0, max: 1000 },
+        annotations: {
+            yaxis: [
+                { y: 0, y2: 500, fillColor: '#10B981', opacity: 0.1, label: { text: 'Ideal' } },
+                { y: 500, y2: 1000, fillColor: '#F59E0B', opacity: 0.1, label: { text: 'Alto' } }
+            ]
+        }
+    });
+    // Gráfica de Turbidez
+    var chart_turbidez = new ApexCharts(document.querySelector("#chart-turbidez"), {
+        ...commonOptions,
+        colors: ['#6366f1'],
+        series: [{ name: 'Turbidez', data: [1.8, 2.0, 2.2, 2.1, 2.3, 2.2, 2.1] }],
+        yaxis: { min: 0, max: 20 },
+        annotations: {
+            yaxis: [
+                { y: 0, y2: 5, fillColor: '#10B981', opacity: 0.1, label: { text: 'Clara' } },
+                { y: 5, y2: 20, fillColor: '#F59E0B', opacity: 0.1, label: { text: 'Turbia' } }
+            ]
+        }
+    });
+
+    chart_ph.render();
+    chart_temperatura.render();
+    chart_turbidez.render();
+    chart_tds.render();
+
+
+    function updateChartsOptions(){
+        chart_ph.updateOptions({series: [{ data: ph }], xaxis: {categories: fecha_creacion}});
+        chart_temperatura.updateOptions({series: [{ data: temperatura }], xaxis: {categories: fecha_creacion}});
+        chart_turbidez.updateOptions({series: [{ data: turbidez }], xaxis: {categories: fecha_creacion}});
+        chart_tds.updateOptions({series: [{ data: conductividad }], xaxis: {categories: fecha_creacion}});
+    };
+
+    async function initChart(){
+        fetch(`/api/boya/${ID}/registros-recientes`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+        }).then( response => {
+            if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        }).then(data => {
+            console.log("Proceso exitoso.");
+
+            ph = data.ph;
+            temperatura = data.temperatura;
+            turbidez = data.turbidez;
+            conductividad = data.conductividad;
+            fecha_creacion = data.fecha_creacion;
+
+            updateChartsOptions(); 
+        }).catch(error => {
+            console.log("algo salió mal")
+        });
+    }
+
+</script>
+
+<script>
+    // Script de diagnóstico. Lo ideal sería que se extraiga desde los registros recientes para no hacer una doble consulta.
+    // También hay que esperar que los sockets envien la información con el diagnóstico para tener evitar otra consulta.
+    // Ambas cosas se pueden solucionar con una lógica de diagnóstico integrado en otra función, pero luego se verá la optimización.
+
+    async function lastDiagnostic(){
+
+        fetch(`/api/boya/diagnostico/${ID}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
+            },
+        }).then( response => {
+            if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        }).then(data => {
+            console.log("Proceso exitoso.");
+
+            showDiagnostic(data);
+
+        }).catch(error => {
+            console.log("algo salió mal")
+        });
+
+    }
+
+    const last_ph = document.getElementById('last_ph');
+    const last_temp = document.getElementById('last_temp');
+    const last_tds = document.getElementById('last_tds');
+    const last_turb = document.getElementById('last_turb');
+
+    function showDiagnostic(data){
+        console.log(data);
+        monitorTabsContent.querySelector('p').innerText = `ESTADO ${data.estado.toUpperCase()} - ${data.recomendacion}.`;
+        monitorTabsContent.querySelector('.small').innerText = `Basado en la última lectura ${relativeTime(data.fecha_creacion)}`;
+
+        // last_ph.querySelector('span')// estado
+        last_ph.querySelector('h2').innerText = data.parametros.ph.valor// valor
+        last_temp.querySelector('h2').innerText = data.parametros.temperatura.valor// valor
+        last_turb.querySelector('h2').innerText = data.parametros.turbidez.valor// valor
+        last_tds.querySelector('h2').innerText = data.parametros.conductividad.valor// valor
+
+        mapStatus('ph', data.parametros.ph.score);
+        mapStatus('temperatura', data.parametros.temperatura.score);
+        mapStatus('turbidez', data.parametros.turbidez.score);
+        mapStatus('conductividad', data.parametros.conductividad.score);
+    }
+
+    const colorClasses = ['success', 'warning', 'danger'];
+    function mapStatus(value, status){
+        // Usar un switch case permite modificar un único cuadro, en caso de ser necesario.
+        // Sino hace falta esa función, se eliminaría todo lo del swicth y case, además de
+        // que status deberá ser un diccionario, o al menos un array para distinguir entre ellos.
+        console.log(`Mapeando ${value} con score ${status}`);
+        switch(value){
+            case 'ph':
+                // Todos los 'statusText' deben tener un formato de valores del 1 al 3 
+                // Siguiendo 'Normal', 'Medio' y Malo. 
+                statusText = ['Normal', 'Medio', 'Malo'];
+                mapColorClasess(last_ph.querySelector('span'), status);
+                last_ph.querySelector('span').innerText = statusText[status];
+                return;
+            case 'temperatura':
+                statusText = ['Normal', 'Medio', 'Malo'];
+                mapColorClasess(last_temp.querySelector('span'), status);
+                last_temp.querySelector('span').innerText = statusText[status];
+                return;
+            case 'conductividad':
+                statusText = ['Normal', 'Medio', 'Malo'];
+                mapColorClasess(last_tds.querySelector('span'), status);
+                last_tds.querySelector('span').innerText = statusText[status];
+                return;
+            case 'turbidez':
+                statusText = ['Normal', 'Medio', 'Malo'];
+                mapColorClasess(last_turb.querySelector('span'), status);
+                last_turb.querySelector('span').innerText = statusText[status];
+                return;
+            default: return;
+        }
+    };
+
+    function mapColorClasess(label, status){
+        for(i=0; i<3; i++){
+            label.classList.remove(`bg-${colorClasses[i]}-subtle`,`text-${colorClasses[i]}`);
+        }
+
+        label.classList.add(`bg-${colorClasses[status]}-subtle`,`text-${colorClasses[status]}`);
+    }
+
+</script>
+{% endblock %}

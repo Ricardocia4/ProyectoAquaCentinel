@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Registro - AquaSentinel</title>
+    <title>Iniciar Sesión - AquaSentinel</title>
     <link rel="icon" type="image/png" href="{% static 'web/img/icon-aquacentinel.png' %}">
 
     <!-- Fuentes y estilos -->
@@ -12,7 +12,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <link rel="stylesheet" href="{% static 'accounts/css/registro.css' %}">
+    <link rel="stylesheet" href="{% static 'accounts/css/login.css' %}">
+
 
 </head>
 <body>
@@ -40,47 +41,47 @@
         <!-- Panel derecho con el formulario de login -->
         <div class="login-right">
             <div class="login-header">
-                <h1>Registrar</h1>
+                <h1>Iniciar Sesión</h1>
+                <p>Ingresa a tu cuenta para acceder al dashboard</p>
             </div>
+
             <form method="post">
-                {%csrf_token%}
-                {{ form.non_field_errors | safe }}
+                {% csrf_token %}
 
-
-                <!-- email Address -->
-                <div class="form-group">
-                    {{ form.email.errors | safe }}
-                    <label for="id_email" class="form-label">Correo electrónico</label>
-                    {{ form.email }}
-                </div>
-
+                <!-- usermane Address -->
                 <div class="form-group">
                     {{ form.username.errors | safe }}
-                    <label for="_usermane" class="form-label">Usuario</label>
+                    <label for="usermane" class="form-label">Usuario</label>
                     {{ form.username }}
                 </div>
 
                 <!-- Password -->
                 <div class="form-group">
-                    {{ form.password1.errors | safe }}
-                    <label for="id_password1" class="form-label">Contraseña</label>
-                    {{ form.password1 }}
-                </div>
-                <div class="form-group">
-                    {{ form.password2.errors | safe }}
-                    <label for="password2" class="form-label">Confirmar contraseña</label>
-                    {{ form.password2 }}
-                </div>
-                <!-- Remember Me -->
+                    {{ form.password.errors | safe }}
+                    <label for="password" class="form-label">Contraseña</label>
+                    {{ form.password }}
 
+                </div>
+
+                <!-- Remember Me -->
+                <div class="remember-forgot">
+                    <label class="remember-me">
+                        <input id="remember_me" type="checkbox" name="remember">
+                        <span>Recordar sesión</span>
+                    </label>
+
+                    <a class="forgot-password" href="">
+                        ¿Olvidaste tu contraseña?
+                    </a>
+                </div>
 
                 <button type="submit" class="login-button">
                     <i class="fas fa-sign-in-alt" style="margin-right: 8px;"></i>
-                    Registrar
+                    Iniciar Sesión
                 </button>
 
                 <div class="register-link">
-                    ¿Ya tienes una cuenta? <a href="{% url 'login' %}">Inicia sesión aquí</a>
+                    ¿No tienes una cuenta? <a href="{% url 'signup' %}">Regístrate aquí</a>
                 </div>
             </form>
         </div>
