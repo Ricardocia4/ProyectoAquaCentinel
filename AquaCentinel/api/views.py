@@ -120,20 +120,25 @@ def boyas(request):
 @csrf_exempt
 def registroDeSensores(request):
     if request.method == "POST":
-        data = json.loads(request.body)
-        form = RegistroSensorForm(data)
+        registro = json.loads(request.body)
+        form = RegistroSensorForm(registro)
         if form.is_valid():
             try:
-                registro = form.save()
+                registroForm = form.save()
                 # Aquí se hace un "emit"
-                data["fecha_creacion"] = f"{registro.fecha_creacion}"
+                registro["fecha_creacion"] = f"{registroForm.fecha_creacion}"
+                diagnostico = diagnosticar(registro)
+
                 channel_layer = get_channel_layer()
 
                 async_to_sync(channel_layer.group_send)(
-                    f'{data["boya"]}',  # Nombre del grupo (ID de boya)
+                    f'{registro["boya"]}',  # Nombre del grupo (ID de boya)
                     {
                         'type': 'send_new_data', # Nombre del método en el consumidor
-                        'data': data,
+                        'data': {
+                            'registro': registro,
+                            'diagnostico': diagnostico,
+                        }
                     }
                 )
 
@@ -242,8 +247,7 @@ def ultimoRegistro(request, id):
         print(f"error: {e}")
         return JsonResponse({"success": False, "message": "Algo salió mal"}, status=500)
 
-@csrf_exempt
-def infoReciente(request, id):
+def registrosRecientesConDiagnostico(id):
     data = list(
         RegistroSensor.objects.filter(boya=id)
         .values("ph", "turbidez", "temperatura", "conductividad", "fecha_creacion")
@@ -252,10 +256,7 @@ def infoReciente(request, id):
     )
 
     if not data:
-        return JsonResponse(
-            {"success": False, "message": "No se encontraron registros para esta boya"},
-            status=404,
-        )
+        return [], []
     
     ph, temp, turb, conduc, fecha = [], [], [], [], []
     for d in data:
@@ -264,54 +265,42 @@ def infoReciente(request, id):
         turb.append(d["turbidez"])
         conduc.append(d["conductividad"])
         fecha.append(d["fecha_creacion"])
-    print(ph)
-    return JsonResponse(
-        {
-            "ph": ph,
-            "conductividad": conduc,
-            "temperatura": temp,
-            "turbidez": turb,
-            "fecha_creacion": fecha,
-        },
-        safe=False,
-    )
+
+    registros = {    
+                "ph": ph,
+                "conductividad": conduc,
+                "temperatura": temp,
+                "turbidez": turb,
+                "fecha_creacion": fecha,
+            }
+    
+    diagnostico = diagnosticar(data[0])
+    return registros, diagnostico
 
 @csrf_exempt
-def diagnostico(request, id):
+def detalles(request, id):
+    boya = None
     try:
-        registro = traerUltimoRegistro(id)
+        boya = model_to_dict(Boya.objects.get(id=id))
 
-        scorep_ph = scorePh(registro.ph)
-        score_temp = scoreTemperature(registro.temperatura)
-        score_turb = scoreTurbity(registro.turbidez)
-        score_conduc = scoreConductivity(registro.conductividad)
-
-        score = scorep_ph + score_temp + score_turb + score_conduc
-        estado, recomendacion = diagnostic(score)
-        data = {
-            "parametros": {
-                "ph": {"valor": registro.ph, "score": scorep_ph},
-                "temperatura": {"valor": registro.temperatura, "score": score_temp},
-                "turbidez": {"valor": registro.turbidez, "score": score_turb},
-                "conductividad": {
-                    "valor": registro.conductividad,
-                    "score": score_conduc,
-                },
-            },
-            "fecha_creacion": registro.fecha_creacion,
-            "puntaje_total": score,
-            "estado": estado,
-            "recomendacion": recomendacion,
-        }
-        return JsonResponse(data)
-    except RegistroSensor.DoesNotExist:
-        return JsonResponse(
-            {"success": False, "message": "No se encontraron registros para esta boya"},
-            status=404,
-        )
+    except Boya.DoesNotExist:
+        return JsonResponse({"success": False, "message": "No existe una boya con este ID."})
+    
     except Exception as e:
         print(f"error: {e}")
         return JsonResponse({"success": False, "message": "Algo salió mal"}, status=500)
+    
+
+
+    registros, diagnostico = registrosRecientesConDiagnostico(id)
+        
+    data = {
+            "boya": boya,
+            "registros": registros,
+            "diagnostico": diagnostico
+            }
+    
+    return JsonResponse(data, safe=False)
 
 
 def scorePh(ph):
@@ -358,3 +347,23 @@ def diagnostic(score):
 
 def traerUltimoRegistro(id):
     return RegistroSensor.objects.filter(boya=id).latest("fecha_creacion")
+
+def diagnosticar(registro):
+    scorep_ph = scorePh(registro["ph"])
+    score_temp = scoreTemperature(registro["temperatura"])
+    score_turb = scoreTurbity(registro["turbidez"])
+    score_conduc = scoreConductivity(registro["conductividad"])
+
+    score = scorep_ph + score_temp + score_turb + score_conduc
+    estado, recomendacion = diagnostic(score)
+
+    diagnostico = {
+        "score_ph": scorep_ph,
+        "score_temperatura": score_temp,
+        "score_turbidez": score_turb,
+        "score_conductividad": score_conduc,
+        "estado": estado,
+        "recomendacion": recomendacion,
+    }
+
+    return diagnostico

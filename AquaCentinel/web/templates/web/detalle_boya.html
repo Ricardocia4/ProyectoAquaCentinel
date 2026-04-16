@@ -20,7 +20,7 @@
                     </p>
                 </div>
                 <div class="mt-3 mt-md-0">
-                    <span class="badge bg-success-subtle text-success p-2 px-4 rounded-pill border border-success-subtle shadow-sm">
+                    <span class="badge bg-success-subtle text-success p-2 px-4 rounded-pill border border-success-subtle shadow-sm" id="transmision_status">
                         <i class="fas fa-circle me-2 animate-pulse"></i> Transmitiendo en vivo
                     </span>
                 </div>
@@ -134,6 +134,9 @@
                         <button class="btn btn-primary btn-sm px-3 rounded-pill fw-bold"><i class="fas fa-download me-2"></i>Exportar</button>
                     </div>
                 </div>
+
+                <nav id="paginacion-nav" aria-label="Page navigation"></nav>
+
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
@@ -147,6 +150,30 @@
                             </tr>
                         </thead>
                         <tbody id="historic">
+                            <tr>
+                                <td class="ps-4 py-3 fw-bold text-dark">09/04/2026 17:00</td>
+                                <td class="text-center font-monospace">7.42</td>
+                                <td class="text-center font-monospace">24.5 °C</td>
+                                <td class="text-center font-monospace text-info">120</td>
+                                <td class="text-center font-monospace">2.1</td>
+                                <td class="pe-4 text-end"><span class="badge bg-success-subtle text-success p-2 px-3 rounded-pill">ÓPTIMO</span></td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4 py-3 fw-bold text-dark">09/04/2026 17:00</td>
+                                <td class="text-center font-monospace">7.42</td>
+                                <td class="text-center font-monospace">24.5 °C</td>
+                                <td class="text-center font-monospace text-info">120</td>
+                                <td class="text-center font-monospace">2.1</td>
+                                <td class="pe-4 text-end"><span class="badge bg-success-subtle text-success p-2 px-3 rounded-pill">ÓPTIMO</span></td>
+                            </tr>
+                            <tr>
+                                <td class="ps-4 py-3 fw-bold text-dark">09/04/2026 17:00</td>
+                                <td class="text-center font-monospace">7.42</td>
+                                <td class="text-center font-monospace">24.5 °C</td>
+                                <td class="text-center font-monospace text-info">120</td>
+                                <td class="text-center font-monospace">2.1</td>
+                                <td class="pe-4 text-end"><span class="badge bg-success-subtle text-success p-2 px-3 rounded-pill">ÓPTIMO</span></td>
+                            </tr>
                             <tr>
                                 <td class="ps-4 py-3 fw-bold text-dark">09/04/2026 17:00</td>
                                 <td class="text-center font-monospace">7.42</td>
@@ -194,7 +221,7 @@
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-<script>
+<script>// Inicializador
     const ID = "{{ id }}";
     const monitorTabsContent = document.getElementById('monitorTabsContent');
     const boya_div = document.getElementById('boya_div');
@@ -202,8 +229,8 @@
     window.addEventListener('load', (event) => {
         // Aquí se inicializan las funciones necesarias.
         // Información de la boya. Ya le falta una optimizada a todo esto.
-        
-        fetch(`/api/boya/${ID}/info`, {
+        return 0;
+        fetch(`/api/boya/${ID}/detalles`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -215,13 +242,25 @@
             }
             return response.json();
         }).then(data => {
+            aaa = data;
+            console.log(data);
+            const boya = data.boya;
 
-            boya_div.querySelector('h1').innerText = data.codigo_boya;
-            boya_div.querySelector('p').innerText = data.descripcion == null ? 'Sin descripción...' : data.descripcion;
-            boya_div.querySelector('span').innerText = `ID: ${data.id}`;
+            boya_div.querySelector('h1').innerText = boya.codigo_boya;
+            boya_div.querySelector('p').innerText = boya.descripcion == null ? 'Sin descripción...' : boya.descripcion;
+            boya_div.querySelector('span').innerText = `ID: ${boya.id}`;
             
-            lastDiagnostic();
-            initChart();
+            initChart(data.registros);
+
+
+            const ultimoRegistro = {
+                ph: data.registros.ph[0],
+                temperatura: data.registros.temperatura[0],
+                conductividad: data.registros.conductividad[0],
+                turbidez: data.registros.turbidez[0],
+                fecha_creacion: data.registros.fecha_creacion[0]
+            }
+            showDiagnostic(ultimoRegistro, data.diagnostico);
 
         }).catch(error => {
 
@@ -232,14 +271,18 @@
     });
 </script>
 
-<!-- Datos históricos -->
+<!-- Datos históricos (tabla)-->
 <script>
     // Este scrip funciona únicamente para los datos históricos.
     // Son muchos, así que sino se abre la pestaña, no cargan.
     const historic = document.getElementById('historic');
     var active = false;
+    var items = [];
+    var itemsPerPage = 3;
+    var currentPage = 1;
 
     document.getElementById('history-tab').addEventListener('click', async function(){
+        return
         if(active)
             return;
 
@@ -257,13 +300,7 @@
 
         if (response.ok) {
             console.log("Proceso exitoso.");
-            var Tbody = "";
-            for(i=0; i < data.length; i++){
-                console.log(data[i])
-                Tbody += createHTMLRow(data[i]);
-            }
-
-            historic.innerHTML = Tbody;
+            items = await data;
         } else {
             console.log("Error: " + data.message);
         }
@@ -281,6 +318,44 @@
         </tr>
         `
     }
+
+    var totalPages = 0;
+    
+function pageAndFilter(pagina) {
+
+    // Calcular el total de páginas y el índice de los elementos
+    const totalPaginas = Math.ceil(paisesFiltrados.length / itemsPorPagina);
+    const offset = (page - 1) * itemsPorPagina;
+    const paisesPagina = paisesFiltrados.slice(offset, offset + itemsPorPagina);
+
+    // Mostrar los países en la tabla
+    const paisLista = document.getElementById('pais-lista');
+    paisLista.innerHTML = '';
+    paisesPagina.forEach(pais => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${pais.codigo}</td>
+            <td>${pais.nombre}</td>
+            <td>${pais.moneda}</td>
+            <td>${pais.capital}</td>
+            <td>${pais.continente}</td>
+        `;
+        paisLista.appendChild(row);
+    });
+
+    // Actualizar los controles de paginación
+    const paginacionNav = document.getElementById('paginacion-nav');
+    paginacionNav.innerHTML = '';
+    const paginationList = document.createElement('ul');
+    paginationList.className = 'pagination justify-content-center';
+    for (let i = 1; i <= totalPaginas; i++) {
+        const pageItem = document.createElement('li');
+        pageItem.className = `page-item ${i === page ? 'active' : ''}`;
+        pageItem.innerHTML = `<button class="page-link" onclick="filtrarYPaginar(${i})">${i}</button>`;
+        paginationList.appendChild(pageItem);
+    }
+    paginacionNav.appendChild(paginationList);
+}
 
     function ISOdateFormat(ISOdate){
         date = new Date(ISOdate);
@@ -399,31 +474,17 @@
         chart_tds.updateOptions({series: [{ data: conductividad }], xaxis: {categories: fecha_creacion}});
     };
 
-    async function initChart(){
-        fetch(`/api/boya/${ID}/registros-recientes`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrftoken
-            },
-        }).then( response => {
-            if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            return response.json();
-        }).then(data => {
-            console.log("Proceso exitoso.");
+    async function initChart(data){
+        if (Array.isArray(data) && data.length === 0)
+            return;
 
-            ph = data.ph;
-            temperatura = data.temperatura;
-            turbidez = data.turbidez;
-            conductividad = data.conductividad;
-            fecha_creacion = data.fecha_creacion;
+        ph = data.ph;
+        temperatura = data.temperatura;
+        turbidez = data.turbidez;
+        conductividad = data.conductividad;
+        fecha_creacion = data.fecha_creacion;
 
-            updateChartsOptions(); 
-        }).catch(error => {
-            console.log("algo salió mal")
-        });
+        updateChartsOptions(); 
     }
 
     // La cantidad màxima de valores por gráfica.
@@ -455,50 +516,32 @@
     // También hay que esperar que los sockets envien la información con el diagnóstico para tener evitar otra consulta.
     // Ambas cosas se pueden solucionar con una lógica de diagnóstico integrado en otra función, pero luego se verá la optimización.
 
-    async function lastDiagnostic(){
-
-        fetch(`/api/boya/diagnostico/${ID}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrftoken
-            },
-        }).then( response => {
-            if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            return response.json();
-        }).then(data => {
-            console.log("Proceso exitoso.");
-
-            showDiagnostic(data);
-
-        }).catch(error => {
-            console.log("algo salió mal")
-        });
-
-    }
-
     const last_ph = document.getElementById('last_ph');
     const last_temp = document.getElementById('last_temp');
     const last_tds = document.getElementById('last_tds');
     const last_turb = document.getElementById('last_turb');
 
-    function showDiagnostic(data){
-        console.log(data);
-        monitorTabsContent.querySelector('p').innerText = `ESTADO ${data.estado.toUpperCase()} - ${data.recomendacion}.`;
-        monitorTabsContent.querySelector('.small').innerText = `Basado en la última lectura ${relativeTime(data.fecha_creacion)}`;
+    function showDiagnostic(registro, score){
 
-        // last_ph.querySelector('span')// estado
-        last_ph.querySelector('h2').innerText = data.parametros.ph.valor// valor
-        last_temp.querySelector('h2').innerText = data.parametros.temperatura.valor// valor
-        last_turb.querySelector('h2').innerText = data.parametros.turbidez.valor// valor
-        last_tds.querySelector('h2').innerText = data.parametros.conductividad.valor// valor
+        if (Array.isArray(registro) && registro.length === 0)
+            return;
+        // Ùltimo registro
+        last_ph.querySelector('h2').innerText = registro.ph;
+        last_temp.querySelector('h2').innerText = registro.temperatura;
+        last_turb.querySelector('h2').innerText = registro.turbidez;
+        last_tds.querySelector('h2').innerText = registro.conductividad;
 
-        mapStatus('ph', data.parametros.ph.score);
-        mapStatus('temperatura', data.parametros.temperatura.score);
-        mapStatus('turbidez', data.parametros.turbidez.score);
-        mapStatus('conductividad', data.parametros.conductividad.score);
+        if (Array.isArray(score) && score.length === 0)
+            return;
+        
+        // Score
+        mapStatus('ph', score.score_ph);
+        mapStatus('temperatura', score.score_temperatura);
+        mapStatus('turbidez', score.score_turbidez);
+        mapStatus('conductividad', score.score_conductividad);
+
+        monitorTabsContent.querySelector('p').innerText = `ESTADO ${score.estado.toUpperCase()} - ${score.recomendacion}.`;
+        monitorTabsContent.querySelector('.small').innerText = `Basado en la última lectura ${relativeTime(registro.fecha_creacion)}.`;
     }
 
     const colorClasses = ['success', 'warning', 'danger'];
@@ -547,21 +590,25 @@
 <!-- Sockets -->
 <script>
     // Script para gestionar la conexión a websockets 
-    const tst = {boya: 1, ph: 9, temperatura: 25, conductividad: 400, turbidez: 0.3}
-    
-    const chatSocket = new WebSocket(
-        'ws://' + window.location.host + '/ws/chat/' + ID + '/'
-    );
+  
+    // const chatSocket = new WebSocket(
+    //     'ws://' + window.location.host + '/ws/chat/' + ID + '/'
+    // );
 
+    // const transmision_status = document.getElementById('transmision_status');
+    // chatSocket.onclose = function(e) {
+    //     transmision_status.classList.remove('bg-success-subtle', 'text-success', 'border-success-subtle')
+    //     transmision_status.classList.add('bg-danger-subtle', 'text-danger', 'border-danger-subtle')
+    //     transmision_status.innerHTML = '<i class="fas fa-circle me-2 animate-pulse"></i> Sin conexión'
+    //     console.error('Chat socket cerrado inesperadamente');
+    // };
 
-    chatSocket.onclose = function(e) {
-        console.error('Chat socket cerrado inesperadamente');
-    };
-
-    chatSocket.onmessage = function(e) {
-        const data = JSON.parse(e.data);
-        console.log("Mensaje recibido: ", data);
-        updateChartsData(data);
-    };
+    // chatSocket.onmessage = function(e) {
+    //     const data = JSON.parse(e.data);
+    //     console.log("Mensaje recibido: ", data);
+    //     updateChartsData(data.registro);
+    //     showDiagnostic(data.registro, data.diagnostico);
+    // };
 </script>
+
 {% endblock %}
