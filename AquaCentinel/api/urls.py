@@ -5,6 +5,7 @@ app_name = "api"
 urlpatterns = [
     path("boyas", views.boyas),
     path("mis-boyas", views.misBoyas, name="misBoyas"),
+    path("mis-boyas/descripcion", views.boyaDescripcion, name="boyaDescripcion"),
     path("mis-boyas/<str:id>", views.misBoyas, name="miBoya"),
     path("sensores", views.registroDeSensores, name="sensores"),
     # path("boya/diagnostico/<str:id>", views.diagnostico, name="diagnostico"),

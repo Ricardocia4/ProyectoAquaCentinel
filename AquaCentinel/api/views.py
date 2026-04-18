@@ -86,7 +86,8 @@ def misBoyas(request):
     try:
         boya.usuario = request.user
         boya.save()
-        return JsonResponse({"success": True, "message": "Boya vinculada con éxito"})
+    
+        return JsonResponse({"success": True, "message": "Boya vinculada con éxito", "id": boya.id})
     except Exception as e:
         print(f"error: {e}")
         return JsonResponse({"success": False, "message": "Algo salió mal"}, status=500)
@@ -139,6 +140,31 @@ def boyas(request):
             )
 
     return JsonResponse({"success": False, "message": "Método no válido"}, status=400)
+
+@csrf_exempt
+def boyaDescripcion(request):
+    if request.method == "POST":
+        boya = None
+        try:
+            boya = Boya.objects.get(id=request.POST.get("id"))
+            if len(request.POST.get("descripcion")) > 255:
+                return JsonResponse({"success": False, "message": "La descripción excede los 255 caracteres"}, status=413)
+
+            boya.descripcion = request.POST.get("descripcion")
+
+            boya.save()
+            
+            return JsonResponse({"success": True,},status=200,)
+        
+        except Boya.DoesNotExist:
+            return JsonResponse({"success": False, "message": "No existe una boya con este ID."})
+
+        except Exception as e:
+            print(f"error: {e}")
+            return JsonResponse({"success": False, "message": "Algo salió mal"}, status=500)
+
+    
+    return JsonResponse({"success": False}, status=409)
 
 
 @csrf_exempt

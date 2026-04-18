@@ -50,6 +50,34 @@
     </div>
 </div>
 
+<div class="modal fade" id="descriptionModal" tabindex="-1" role="dialog" aria-labelledby="descriptionModal" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="descriptionModalID">Esperando información....</h5>
+        <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form id="descriptionForm" method="post" action="{% url 'api:boyaDescripcion' %}">
+      <div class="modal-body">
+            {% csrf_token %}
+            <input type="hidden" name="id" id="desc_boya_id">
+            <div class="form-group">
+                <label for="message-text" class="col-form-label">Descripción:</label>
+                <textarea class="form-control" id="description_area" name="descripcion" maxlength="255" required></textarea>
+            </div>
+        </div><p>pe</p>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            <button type="submit" class="btn btn-success" id="submit_desc_btn">Guardar</button>
+        </div>
+    </form>
+    </div>
+  </div>
+</div>
+
+
 <style>
     /* Efecto hover para las tarjetas */
     .shadow-hover:hover {
@@ -106,12 +134,19 @@
             });
 
             if (response.ok) {
-                const resultado = await response.text();
+                const resultado = await response.json();
+
+                let newBoya = Object.fromEntries(formData.entries());
+                newBoya.id = await resultado.id;
+                newBoya.registro = {};
+
+                createCard(newBoya);
+
                 message.innerText = "Boya Vinculada con éxito.";
                 form.reset();
                 submit_btn.disabled = false;
             } else {
-                msg = await response.json()
+                msg = await response.json();
                 message.innerText = msg.message;
                 submit_btn.disabled = false;
             }
@@ -121,10 +156,65 @@
         }
 
     });
+var ff;
+//mis-boyas/descripcion
+    const descriptionForm = document.getElementById('descriptionForm');
+    const submit_desc_btn = document.getElementById('submit_desc_btn');
+
+        descriptionForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            submit_desc_btn.disabled = true;
+
+            const formData = new FormData(descriptionForm);
+            // message.innerText = "Esperando respuesta...";
+
+            try {
+                const response = await fetch(descriptionForm.action, {
+                    method: descriptionForm.method,
+                    body: formData
+                });
+                if (response.ok) {
+                    const resultado = await response.json();
+
+                    document.getElementById("desc_" + formData.get('id')).innerText = formData.get('descripcion');
+                    // message.innerText = "Boya Vinculada con éxito.";
+                    form.reset();
+                    submit_desc_btn.disabled = false;
+                } else {
+                    msg = await response.json();
+                    // message.innerText = msg.message;
+                    submit_desc_btn.disabled = false;
+                }
+
+            } catch (error) {
+                console.log(error)
+            }
+
+        });
+
+    document.getElementById('descriptionModal').addEventListener('show.bs.modal', (e) =>{
+        const button = event.relatedTarget;
+        const id = button.getAttribute('data-bs-id');
+
+        const title = document.getElementById('descriptionModalID');
+        const description_area = document.getElementById('description_area');
+
+        const desc_boya = document.getElementById('desc_' + id);
+        const desc_boya_id = document.getElementById('desc_boya_id');
+
+        if (desc_boya.innerText === "SIN DESCRIPCIÓN...")
+            description_area.value = "";
+        else
+            description_area.value = desc_boya.innerText;
+
+        desc_boya_id.value = id;
+        title.innerText = `Descripción de la boya con ID ${id}`;
+    })
+
 </script>
 
 <script>
-var dat;
     const container = document.getElementById('boyas_container');
 
     async function getBoyas(){
@@ -151,7 +241,6 @@ var dat;
         
 
     }
-
     function createCard(boya) {
         var card = document.createElement('div');
         card.classList.add("col-12", "col-md-6", "col-xl-4")
@@ -175,7 +264,7 @@ var dat;
 
                                     <div class="mb-4">
                                         <p class="small text-muted fw-bold text-uppercase mb-2" style="letter-spacing: 0.05em;">Descripción</p>
-                                        <p class="small text-muted fw-bold text-uppercase mb-2" style="letter-spacing: 0.05em;">
+                                        <p class="small text-muted fw-bold text-uppercase mb-2" style="letter-spacing: 0.05em;" id="desc_${boya.id}">
                                             ${boya.descripcion == null ? "Sin descripción..." : boya.descripcion}
                                         </p>
                                     </div>
@@ -196,7 +285,7 @@ var dat;
                                             class="btn btn-primary flex-grow-1 fw-bold py-3 rounded-3 shadow-sm">
                                             <i class="fas fa-chart-line me-2"></i> Ver Dashboard
                                         </a>
-                                        <button class="btn btn-light border py-3 px-3 rounded-3">
+                                        <button class="btn btn-light border py-3 px-3 rounded-3 teste" data-bs-toggle="modal" data-bs-target="#descriptionModal" data-bs-id="${boya.id}">
                                             <i class="fas fa-cog text-secondary"></i>
                                         </button>
                                     </div>
