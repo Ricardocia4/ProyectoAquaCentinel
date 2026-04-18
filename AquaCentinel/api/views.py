@@ -4,6 +4,8 @@ from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from .models import RegistroSensor, Boya
 from django.forms.models import model_to_dict
+from django.utils import timezone
+from django.contrib.auth.decorators import login_required
 
 # Estos imports son para los sockets
 from channels.layers import get_channel_layer
@@ -18,13 +20,17 @@ from django.views.decorators.csrf import (
 
 @csrf_exempt
 def misBoyas(request):
-    # Este endpoint retorna todas las boyas vinculadas del usuario 
+    # Este endpoint retorna todas las boyas vinculadas del usuario
     if request.method == "GET":
         print(f"usuario: {request.user.id}")
         try:
-            boyas = list(Boya.objects.filter(usuario=request.user.id).values("id", "codigo_boya", "descripcion"))
+            boyas = list(
+                Boya.objects.filter(usuario=request.user.id).values(
+                    "id", "codigo_boya", "descripcion"
+                )
+            )
             print(boyas)
-            
+
             for i in range(len(boyas)):
                 try:
                     registro = traerUltimoRegistro(boyas[i]["id"])
@@ -35,33 +41,47 @@ def misBoyas(request):
             return JsonResponse(boyas, safe=False)
 
         except Boya.DoesNotExist:
-            return JsonResponse({"success": False, "message": "No existen boyas vinculadas a este usuario."})
-        
+            return JsonResponse(
+                {
+                    "success": False,
+                    "message": "No existen boyas vinculadas a este usuario.",
+                }
+            )
+
         except Exception as e:
             print(f"error: {e}")
-            return JsonResponse({"success": False, "message": "Algo salió mal"}, status=500)
-            
+            return JsonResponse(
+                {"success": False, "message": "Algo salió mal"}, status=500
+            )
+
     if request.method == "POST":
         boya = None
-        codigo_boya = request.POST.get('codigo_boya')
+        codigo_boya = request.POST.get("codigo_boya")
 
         try:
             boya = Boya.objects.get(codigo_boya=codigo_boya)
 
         except Boya.DoesNotExist:
             return JsonResponse(
-                {"success": False, "message": "El código no corresponde a ninguna boya"},
+                {
+                    "success": False,
+                    "message": "El código no corresponde a ninguna boya",
+                },
                 status=404,
             )
         except Exception as e:
             print(f"error: {e}")
-            return JsonResponse({"success": False, "message": "Algo salió mal"}, status=500)
-        
+            return JsonResponse(
+                {"success": False, "message": "Algo salió mal"}, status=500
+            )
+
     print(f"Usuario : {boya.usuario}")
 
     if boya.usuario is not None:
-        return JsonResponse({"success": False, "message": "Esta boya ya está vinculada a un usuario."}, status=409)
-    
+        return JsonResponse(
+            {"success": False, "message": "Esta boya ya está vinculada a un usuario."},
+            status=409,
+        )
 
     try:
         boya.usuario = request.user
@@ -71,6 +91,7 @@ def misBoyas(request):
         print(f"error: {e}")
         return JsonResponse({"success": False, "message": "Algo salió mal"}, status=500)
 
+
 @csrf_exempt
 def info(request, id):
     try:
@@ -79,11 +100,14 @@ def info(request, id):
         return JsonResponse(boya, safe=False)
 
     except Boya.DoesNotExist:
-        return JsonResponse({"success": False, "message": "No existe una boya con este ID."})
-    
+        return JsonResponse(
+            {"success": False, "message": "No existe una boya con este ID."}
+        )
+
     except Exception as e:
         print(f"error: {e}")
         return JsonResponse({"success": False, "message": "Algo salió mal"}, status=500)
+
 
 @csrf_exempt
 def boyas(request):
@@ -134,14 +158,13 @@ def registroDeSensores(request):
                 async_to_sync(channel_layer.group_send)(
                     f'{registro["boya"]}',  # Nombre del grupo (ID de boya)
                     {
-                        'type': 'send_new_data', # Nombre del método en el consumidor
-                        'data': {
-                            'registro': registro,
-                            'diagnostico': diagnostico,
-                        }
-                    }
+                        "type": "send_new_data",  # Nombre del método en el consumidor
+                        "data": {
+                            "registro": registro,
+                            "diagnostico": diagnostico,
+                        },
+                    },
                 )
-
 
                 return JsonResponse(
                     {
@@ -179,7 +202,7 @@ def historico(request, id):
             {"success": False, "message": "No se encontraron registros para esta boya"},
             status=404,
         )
-    
+
     return JsonResponse(data, safe=False)
     ph, temp, turb, conduc, fecha = [], [], [], [], []
     for d in data:
@@ -247,17 +270,17 @@ def ultimoRegistro(request, id):
         print(f"error: {e}")
         return JsonResponse({"success": False, "message": "Algo salió mal"}, status=500)
 
+
 def registrosRecientesConDiagnostico(id):
     data = list(
         RegistroSensor.objects.filter(boya=id)
         .values("ph", "turbidez", "temperatura", "conductividad", "fecha_creacion")
-        .order_by("-fecha_creacion")
-        [:15]
+        .order_by("-fecha_creacion")[:15]
     )
 
     if not data:
         return [], []
-    
+
     ph, temp, turb, conduc, fecha = [], [], [], [], []
     for d in data:
         ph.append(d["ph"])
@@ -266,16 +289,17 @@ def registrosRecientesConDiagnostico(id):
         conduc.append(d["conductividad"])
         fecha.append(d["fecha_creacion"])
 
-    registros = {    
-                "ph": ph,
-                "conductividad": conduc,
-                "temperatura": temp,
-                "turbidez": turb,
-                "fecha_creacion": fecha,
-            }
-    
+    registros = {
+        "ph": ph,
+        "conductividad": conduc,
+        "temperatura": temp,
+        "turbidez": turb,
+        "fecha_creacion": fecha,
+    }
+
     diagnostico = diagnosticar(data[0])
     return registros, diagnostico
+
 
 @csrf_exempt
 def detalles(request, id):
@@ -284,22 +308,18 @@ def detalles(request, id):
         boya = model_to_dict(Boya.objects.get(id=id))
 
     except Boya.DoesNotExist:
-        return JsonResponse({"success": False, "message": "No existe una boya con este ID."})
-    
+        return JsonResponse(
+            {"success": False, "message": "No existe una boya con este ID."}
+        )
+
     except Exception as e:
         print(f"error: {e}")
         return JsonResponse({"success": False, "message": "Algo salió mal"}, status=500)
-    
-
 
     registros, diagnostico = registrosRecientesConDiagnostico(id)
-        
-    data = {
-            "boya": boya,
-            "registros": registros,
-            "diagnostico": diagnostico
-            }
-    
+
+    data = {"boya": boya, "registros": registros, "diagnostico": diagnostico}
+
     return JsonResponse(data, safe=False)
 
 
@@ -335,35 +355,75 @@ def scoreTemperature(t):
     return 2
 
 
-def diagnostic(score):
+def diagnostic(score, max_individual_score):
+    # NUEVA LÓGICA: Si algún sensor sacó un 2 (estado crítico),
+    # el sistema no puede ser "Bueno" aunque la suma sea baja.
+    if max_individual_score >= 2:
+        if score >= 6:
+            return "Malo", "Requiere estudio bacteriológico"
+        return "Regular", "Alerta: Turbidez o parámetros críticos fuera de rango"
+
     if score <= 2:
         return "Bueno", "No requiere mantenimiento"
     if score <= 5:
         return "Regular", "Requiere mantenimiento"
-    if score <= 7:
-        return "Malo", "Requiere tratamiento químico"
-    return "Malo", "Requiere estudio bacteriológico"
+    return "Malo", "Revisión necesaria"
 
 
 def traerUltimoRegistro(id):
     return RegistroSensor.objects.filter(boya=id).latest("fecha_creacion")
 
+
 def diagnosticar(registro):
-    scorep_ph = scorePh(registro["ph"])
-    score_temp = scoreTemperature(registro["temperatura"])
-    score_turb = scoreTurbity(registro["turbidez"])
-    score_conduc = scoreConductivity(registro["conductividad"])
+    # Obtenemos los scores individuales
+    s_ph = scorePh(registro["ph"])
+    s_temp = scoreTemperature(registro["temperatura"])
+    s_turb = scoreTurbity(registro["turbidez"])
+    s_conduc = scoreConductivity(registro["conductividad"])
 
-    score = scorep_ph + score_temp + score_turb + score_conduc
-    estado, recomendacion = diagnostic(score)
+    # Calculamos el puntaje total
+    score_total = s_ph + s_temp + s_turb + s_conduc
 
-    diagnostico = {
-        "score_ph": scorep_ph,
-        "score_temperatura": score_temp,
-        "score_turbidez": score_turb,
-        "score_conductividad": score_conduc,
+    # Buscamos el peor puntaje individual (para el cortocircuito)
+    peor_puntaje = max(s_ph, s_temp, s_turb, s_conduc)
+
+    # Obtenemos estado basándonos en la suma Y en la gravedad individual
+    estado, recomendacion = diagnostic(score_total, peor_puntaje)
+
+    return {
+        "score_ph": s_ph,
+        "score_temperatura": s_temp,
+        "score_turbidez": s_turb,
+        "score_conductividad": s_conduc,
         "estado": estado,
         "recomendacion": recomendacion,
     }
 
-    return diagnostico
+
+@login_required
+def dashboard_data(request):
+    try:
+        user = request.user
+        # Filtramos las boyas del usuario logueado
+        boyas = Boya.objects.filter(usuario=user)
+
+        # Obtenemos los registros asociados a esas boyas
+        registros = RegistroSensor.objects.filter(boya__in=boyas)
+
+        # Usamos __date para ignorar la parte de la hora al contar "Hoy"
+        hoy = timezone.now().date()
+        registros_hoy = registros.filter(fecha_creacion__date=hoy).count()
+
+        data = {
+            "total_boyas": boyas.count(),
+            "total_registros": registros.count(),
+            "registros_hoy": registros_hoy,
+            # Importante: codigo_boya es el nombre en tu modelo
+            "boyas": list(boyas.values("codigo_boya", "descripcion")),
+        }
+        return JsonResponse(data)
+
+    except Exception as e:
+        # Esto te dirá en la consola si falta un import o hay un typo
+        print(f"Error detectado: {str(e)}")
+        return JsonResponse({"error": "Error interno del servidor"}, status=500)

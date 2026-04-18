@@ -14,4 +14,5 @@ urlpatterns = [
     path("boya/<str:id>/historico", views.historico, name="historico"),
     # path("boya/<str:id>/registros-recientes", views.infoReciente, name="registrosRecientes"),
     path("boya/<str:id>/ultimo-registro", views.ultimoRegistro, name="ultimoRegistro"),
+    path("dashboard/", views.dashboard_data, name="dashboard_data"),
 ]

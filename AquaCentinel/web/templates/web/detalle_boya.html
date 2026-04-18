@@ -129,10 +129,16 @@
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
                 <div class="card-header bg-white p-4 border-0 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
                     <h5 class="fw-black text-primary mb-0">Historial de Mediciones</h5>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-light border btn-sm px-3 rounded-pill fw-bold"><i class="fas fa-filter me-2"></i>Filtrar</button>
-                        <button class="btn btn-primary btn-sm px-3 rounded-pill fw-bold"><i class="fas fa-download me-2"></i>Exportar</button>
-                    </div>
+                    <input type="date" id="filter-date" class="form-control form-control-sm rounded-pill">
+                    <button class="btn btn-light border btn-sm px-3 rounded-pill fw-bold" onclick="aplicarFiltro()">
+                        <i class="fas fa-filter me-2"></i>Filtrar
+                    </button>
+                    <button class="btn btn-outline-success btn-sm rounded-pill" onclick="exportarDatos('actual')">
+                    <i class="fas fa-file-excel me-1"></i> Exportar Vista Actual
+                    </button>
+                    <button class="btn btn-success btn-sm rounded-pill" onclick="exportarDatos('global')">
+                        <i class="fas fa-database me-1"></i> Exportar Dataset Global
+                    </button>
                 </div>
 
                 <nav id="paginacion-nav" aria-label="Page navigation"></nav>
@@ -150,30 +156,6 @@
                             </tr>
                         </thead>
                         <tbody id="historic">
-                            <tr>
-                                <td class="ps-4 py-3 fw-bold text-dark">09/04/2026 17:00</td>
-                                <td class="text-center font-monospace">7.42</td>
-                                <td class="text-center font-monospace">24.5 °C</td>
-                                <td class="text-center font-monospace text-info">120</td>
-                                <td class="text-center font-monospace">2.1</td>
-                                <td class="pe-4 text-end"><span class="badge bg-success-subtle text-success p-2 px-3 rounded-pill">ÓPTIMO</span></td>
-                            </tr>
-                            <tr>
-                                <td class="ps-4 py-3 fw-bold text-dark">09/04/2026 17:00</td>
-                                <td class="text-center font-monospace">7.42</td>
-                                <td class="text-center font-monospace">24.5 °C</td>
-                                <td class="text-center font-monospace text-info">120</td>
-                                <td class="text-center font-monospace">2.1</td>
-                                <td class="pe-4 text-end"><span class="badge bg-success-subtle text-success p-2 px-3 rounded-pill">ÓPTIMO</span></td>
-                            </tr>
-                            <tr>
-                                <td class="ps-4 py-3 fw-bold text-dark">09/04/2026 17:00</td>
-                                <td class="text-center font-monospace">7.42</td>
-                                <td class="text-center font-monospace">24.5 °C</td>
-                                <td class="text-center font-monospace text-info">120</td>
-                                <td class="text-center font-monospace">2.1</td>
-                                <td class="pe-4 text-end"><span class="badge bg-success-subtle text-success p-2 px-3 rounded-pill">ÓPTIMO</span></td>
-                            </tr>
                             <tr>
                                 <td class="ps-4 py-3 fw-bold text-dark">09/04/2026 17:00</td>
                                 <td class="text-center font-monospace">7.42</td>
@@ -221,6 +203,33 @@
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.min.js"></script>
+
+<script>
+    // --- FUNCIONES GLOBALES DE UTILIDAD ---
+    // Ponlas aquí arriba para que todos los demás scripts las vean
+
+    function ISOdateFormat(ISOdate) {
+        if (!ISOdate) return "-";
+        const date = new Date(ISOdate);
+        return date.toLocaleString();
+    }
+
+    function relativeTime(fechaPasada) {
+        if (!fechaPasada) return "sin datos";
+        const ahora = new Date();
+        const pasado = new Date(fechaPasada);
+        const diferenciaMs = ahora - pasado;
+        const segundos = Math.floor(diferenciaMs / 1000);
+        const minutos = Math.floor(segundos / 60);
+
+        if (segundos < 1) return "de ahora mismo";
+        if (segundos < 60) return `de hace ${segundos} seg`;
+        if (minutos < 60) return `de hace ${minutos} min`;
+        return `del ${ISOdateFormat(fechaPasada)}`;
+    }
+</script>
+
 <script>// Inicializador
     const ID = "{{ id }}";
     const monitorTabsContent = document.getElementById('monitorTabsContent');
@@ -229,7 +238,6 @@
     window.addEventListener('load', (event) => {
         // Aquí se inicializan las funciones necesarias.
         // Información de la boya. Ya le falta una optimizada a todo esto.
-        return 0;
         fetch(`/api/boya/${ID}/detalles`, {
             method: 'GET',
             headers: {
@@ -249,7 +257,7 @@
             boya_div.querySelector('h1').innerText = boya.codigo_boya;
             boya_div.querySelector('p').innerText = boya.descripcion == null ? 'Sin descripción...' : boya.descripcion;
             boya_div.querySelector('span').innerText = `ID: ${boya.id}`;
-            
+
             initChart(data.registros);
 
 
@@ -275,113 +283,215 @@
 <script>
     // Este scrip funciona únicamente para los datos históricos.
     // Son muchos, así que sino se abre la pestaña, no cargan.
-    const historic = document.getElementById('historic');
-    var active = false;
-    var items = [];
-    var itemsPerPage = 3;
-    var currentPage = 1;
+    const historicTable = document.getElementById('historic');
+    const paginacionNav = document.getElementById('paginacion-nav');
 
-    document.getElementById('history-tab').addEventListener('click', async function(){
-        return
-        if(active)
-            return;
+    let allItems = []; // Todos los datos del API
+    let filteredItems = []; // Datos después de aplicar fechas
+    let itemsPerPage = 10;
+    let currentPage = 1;
 
-        active = true;
+    // 1. Cargar datos al hacer clic en la pestaña
+    document.getElementById('history-tab').addEventListener('click', async function() {
+        if (allItems.length > 0) return;
 
-        const response = await fetch(`/api/boya/${ID}/historico`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrftoken
-            },
-        });
-
+        const response = await fetch(`/api/boya/${ID}/historico`);
         const data = await response.json();
 
         if (response.ok) {
-            console.log("Proceso exitoso.");
-            items = await data;
-        } else {
-            console.log("Error: " + data.message);
+            allItems = data;
+
+            // --- LOGICA PARA MOSTRAR HOY POR DEFECTO ---
+            const hoy = new Date();
+            const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+
+            // Seteamos el valor en el input de fecha para que el usuario sepa qué está viendo
+            document.getElementById('filter-date').value = hoyStr;
+
+            // Filtramos inicialmente por hoy
+            filteredItems = allItems.filter(item => {
+                const fechaReg = new Date(item.fecha_creacion);
+                const fechaLocalStr = `${fechaReg.getFullYear()}-${String(fechaReg.getMonth() + 1).padStart(2, '0')}-${String(fechaReg.getDate()).padStart(2, '0')}`;
+                return fechaLocalStr === hoyStr;
+            });
+
+            renderTable();
         }
     });
 
-    function createHTMLRow(data){
+    // 2. Función para filtrar por fecha
+function aplicarFiltro() {
+        const filterDate = document.getElementById('filter-date').value;
+
+        if (!filterDate) {
+            filteredItems = [...allItems];
+        } else {
+            filteredItems = allItems.filter(item => {
+                // Creamos la fecha del registro
+                const fechaRegistro = new Date(item.fecha_creacion);
+                // La convertimos a string YYYY-MM-DD local para comparar con el input
+                const fechaLocalStr = fechaRegistro.toLocaleDateString('en-CA');
+
+                return fechaLocalStr === filterDate;
+            });
+        }
+
+        currentPage = 1;
+        renderTable();
+    }
+
+    // 3. Renderizar la tabla y la paginación
+    function renderTable() {
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = start + itemsPerPage;
+        const itemsToShow = filteredItems.slice(start, end);
+
+        // Limpiar tabla
+        historicTable.innerHTML = '';
+
+        if (itemsToShow.length === 0) {
+            historicTable.innerHTML = '<tr><td colspan="6" class="text-center py-4">No hay registros para esta fecha.</td></tr>';
+        }
+
+        itemsToShow.forEach(item => {
+            historicTable.innerHTML += createHTMLRow(item);
+        });
+
+        renderPagination();
+    }
+
+    // 4. Dibujar los botoncitos de las páginas
+    function renderPagination() {
+        const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+        paginacionNav.innerHTML = '';
+
+        if (totalPages <= 1) return;
+
+        let navHTML = '<ul class="pagination justify-content-center mt-3">';
+
+        for (let i = 1; i <= totalPages; i++) {
+            navHTML += `
+                <li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <button class="page-link" onclick="changePage(${i})">${i}</button>
+                </li>`;
+        }
+
+        navHTML += '</ul>';
+        paginacionNav.innerHTML = navHTML;
+    }
+
+    function changePage(page) {
+        currentPage = page;
+        renderTable();
+    }
+    function createHTMLRow(data) {
+        const estado = obtenerEstadoFila(data); // Calculamos el estado para esta fila
+
         return `
         <tr>
             <td class="ps-4 py-3 fw-bold text-dark">${ISOdateFormat(data.fecha_creacion)}</td>
             <td class="text-center font-monospace">${data.ph}</td>
             <td class="text-center font-monospace">${data.temperatura} °C</td>
-            <td class="text-center font-monospace">${data.conductividad}</td>
+            <td class="text-center font-monospace text-info">${data.conductividad || 0}</td>
             <td class="text-center font-monospace">${data.turbidez}</td>
-            <td class="pe-4 text-end"><span class="badge bg-success-subtle text-success p-2 px-3 rounded-pill">ÓPTIMO</span></td>
-        </tr>
-        `
+            <td class="pe-4 text-end">
+                <span class="badge bg-${estado.color}-subtle text-${estado.color} p-2 px-3 rounded-pill">
+                    ${estado.texto}
+                </span>
+            </td>
+        </tr>`;
+    }
+    function exportarDatos(tipo) {
+        // 1. Seleccionar el dataset
+        // 'actual' usa filteredItems (lo que el usuario ve tras filtrar/paginar)
+        // 'global' usa allItems (todo lo que descargamos del API)
+        const dataToExport = (tipo === 'global') ? allItems : filteredItems;
+
+        if (dataToExport.length === 0) {
+            alert("No hay datos para exportar en este momento.");
+            return;
+        }
+
+        // 2. Mapear y limpiar los datos para el Excel
+        const rows = dataToExport.map(item => {
+            // --- AQUÍ ESTÁ EL TRUCO: Generamos el dato antes de retornar el objeto ---
+            const diagnosticoGenerado = obtenerEstadoFila(item);
+
+            return {
+                "Fecha y Hora Local": ISOdateFormat(item.fecha_creacion),
+                "pH": item.ph,
+                "Temperatura (°C)": item.temperatura,
+                "TDS (PPM)": item.conductividad,
+                "Turbidez (NTU)": item.turbidez,
+                "ESTADO": diagnosticoGenerado.texto, // Ahora sí existe
+                "Timestamp UTC": item.fecha_creacion
+            };
+        });
+
+        // 3. Crear el libro de Excel usando SheetJS
+        const worksheet = XLSX.utils.json_to_sheet(rows);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Historial_Boya");
+
+        // 4. Generar el nombre del archivo
+        const fechaArchivo = new Date().toISOString().split('T')[0];
+        const nombreArchivo = (tipo === 'global')
+            ? `Dataset_Global_Boya_${ID}_${fechaArchivo}.xlsx`
+            : `Reporte_Filtrado_Boya_${ID}_${fechaArchivo}.xlsx`;
+
+        // 5. Descargar
+        XLSX.writeFile(workbook, nombreArchivo);
     }
 
-    var totalPages = 0;
-    
-function pageAndFilter(pagina) {
+    function obtenerEstadoFila(item) {
+        let scoreTotal = 0;
+        let peorPuntajeIndividual = 0;
 
-    // Calcular el total de páginas y el índice de los elementos
-    const totalPaginas = Math.ceil(paisesFiltrados.length / itemsPorPagina);
-    const offset = (page - 1) * itemsPorPagina;
-    const paisesPagina = paisesFiltrados.slice(offset, offset + itemsPorPagina);
+        // --- Cálculo de Scores Individuales ---
 
-    // Mostrar los países en la tabla
-    const paisLista = document.getElementById('pais-lista');
-    paisLista.innerHTML = '';
-    paisesPagina.forEach(pais => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${pais.codigo}</td>
-            <td>${pais.nombre}</td>
-            <td>${pais.moneda}</td>
-            <td>${pais.capital}</td>
-            <td>${pais.continente}</td>
-        `;
-        paisLista.appendChild(row);
-    });
+        // Score pH
+        let s_ph = 0;
+        if (!(item.ph >= 6.5 && item.ph <= 8.5)) {
+            s_ph = (item.ph >= 6.0 && item.ph <= 9) ? 1 : 2;
+        }
 
-    // Actualizar los controles de paginación
-    const paginacionNav = document.getElementById('paginacion-nav');
-    paginacionNav.innerHTML = '';
-    const paginationList = document.createElement('ul');
-    paginationList.className = 'pagination justify-content-center';
-    for (let i = 1; i <= totalPaginas; i++) {
-        const pageItem = document.createElement('li');
-        pageItem.className = `page-item ${i === page ? 'active' : ''}`;
-        pageItem.innerHTML = `<button class="page-link" onclick="filtrarYPaginar(${i})">${i}</button>`;
-        paginationList.appendChild(pageItem);
+        // Score Temperatura
+        let s_temp = 0;
+        if (!(item.temperatura >= 15 && item.temperatura <= 25)) {
+            s_temp = (item.temperatura >= 10 && item.temperatura <= 30) ? 1 : 2;
+        }
+
+        // Score Turbidez
+        let s_turb = 0;
+        if (item.turbidez > 1) {
+            s_turb = (item.turbidez <= 5) ? 1 : 2;
+        }
+
+        // Score Conductividad
+        let s_conduc = 0;
+        if (item.conductividad > 500) {
+            s_conduc = (item.conductividad <= 1500) ? 1 : 2;
+        }
+
+        // --- Lógica de Diagnóstico ---
+        scoreTotal = s_ph + s_temp + s_turb + s_conduc;
+        peorPuntajeIndividual = Math.max(s_ph, s_temp, s_turb, s_conduc);
+
+        // Aplicamos el "Cortocircuito":
+        // Si algún sensor es crítico (score 2), no puede ser BUENO.
+        if (peorPuntajeIndividual >= 2) {
+            if (scoreTotal >= 6) {
+                return { texto: "MALO", color: "danger" };
+            }
+            return { texto: "REGULAR", color: "warning" };
+        }
+
+        // Lógica estándar por puntos
+        if (scoreTotal <= 2) return { texto: "BUENO", color: "success" };
+        if (scoreTotal <= 5) return { texto: "REGULAR", color: "warning" };
+
+        return { texto: "MALO", color: "danger" };
     }
-    paginacionNav.appendChild(paginationList);
-}
-
-    function ISOdateFormat(ISOdate){
-        date = new Date(ISOdate);
-
-        return date.toLocaleString();
-    }
-
-    function relativeTime(fechaPasada) {
-        const ahora = new Date();
-        const diferenciaMs = ahora - fechaPasada;
-        const segundos = Math.floor(diferenciaMs / 1000);
-        const minutos = Math.floor(segundos / 60);
-
-        if (segundos < 1) return "de ahora mismo";
-        if (segundos < 60) return `de hace ${segundos} seg`;
-        if (minutos < 60) return `de hace ${minutos} min`;
-        
-        // Quizá se vea redundante llamar a la función ISO...
-        // pero si se modifica el formato de la fecha, esto 
-        // asegura que todos tengan el mismo formato.
-        return `del ${ISOdateFormat(fechaPasada)}`;
-    }
-
-
-
-
 </script>
 
 <!-- Gráficas -->
@@ -400,12 +510,20 @@ function pageAndFilter(pagina) {
         stroke: { curve: 'smooth', width: 3 },
         xaxis: {
             categories: ['11am', '12pm', '1pm', '2pm', '3pm', '4pm', '5pm'],
-            labels: { style: { colors: '#94a3b8' }},
+            labels: { style: { colors: '#94a3b8' }, datetimeUTC: false, formatter: function(value) { const date = new Date(value); return date.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }); }},
             type: 'datetime',
         },
-        tooltip: {x: {formatter: function(value) {return ISOdateFormat(value);}}        },
+    tooltip: {
+        x: {
+            formatter: function(value, { dataPointIndex }) {
+                return formatLocalDate(fecha_creacion[dataPointIndex]);
+            }
+        }
+    },
         fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.1 } }
     };
+
+
 
     // Gráfica de pH
     var chart_ph = new ApexCharts(document.querySelector("#chart-ph"), {
@@ -466,13 +584,79 @@ function pageAndFilter(pagina) {
     chart_turbidez.render();
     chart_tds.render();
 
+    function parseLocalDate(dateString){
+        if (!dateString) return null;
+
+        // Si viene en formato ISO sin zona → forzar local
+        if (dateString.includes('T') && !dateString.includes('Z')) {
+            const [fecha, hora] = dateString.split('T');
+            const [anio, mes, dia] = fecha.split('-');
+            const [h, m, s] = (hora || "00:00:00").split(':');
+
+            return new Date(anio, mes - 1, dia, h, m, s);
+        }
+
+        // formato dd/mm/yyyy hh:mm
+        if (dateString.includes('/')) {
+            const [fecha, hora] = dateString.split(' ');
+            const [dia, mes, anio] = fecha.split('/');
+            const [h, m, s] = (hora || "00:00:00").split(':');
+
+            return new Date(anio, mes - 1, dia, h, m, s);
+        }
+
+        // fallback
+        return new Date(dateString);
+    }
 
     function updateChartsOptions(){
-        chart_ph.updateOptions({series: [{ data: ph }], xaxis: {categories: fecha_creacion}});
-        chart_temperatura.updateOptions({series: [{ data: temperatura }], xaxis: {categories: fecha_creacion}});
-        chart_turbidez.updateOptions({series: [{ data: turbidez }], xaxis: {categories: fecha_creacion}});
-        chart_tds.updateOptions({series: [{ data: conductividad }], xaxis: {categories: fecha_creacion}});
-    };
+
+        // Convertimos fechas a timestamps reales
+        const fechasTimestamp = fecha_creacion.map(f => {
+            const date = parseLocalDate(f);
+            return date.getTime(); // ApexCharts trabaja mejor así
+        });
+
+        chart_ph.updateOptions({
+            series: [{
+                data: ph.map((value, i) => ({
+                    x: fechasTimestamp[i],
+                    y: value
+                }))
+            }],
+            xaxis: { type: 'datetime' }
+        });
+
+        chart_temperatura.updateOptions({
+            series: [{
+                data: temperatura.map((value, i) => ({
+                    x: fechasTimestamp[i],
+                    y: value
+                }))
+            }],
+            xaxis: { type: 'datetime' }
+        });
+
+        chart_turbidez.updateOptions({
+            series: [{
+                data: turbidez.map((value, i) => ({
+                    x: fechasTimestamp[i],
+                    y: value
+                }))
+            }],
+            xaxis: { type: 'datetime' }
+        });
+
+        chart_tds.updateOptions({
+            series: [{
+                data: conductividad.map((value, i) => ({
+                    x: fechasTimestamp[i],
+                    y: value
+                }))
+            }],
+            xaxis: { type: 'datetime' }
+        });
+    }
 
     async function initChart(data){
         if (Array.isArray(data) && data.length === 0)
@@ -484,7 +668,7 @@ function pageAndFilter(pagina) {
         conductividad = data.conductividad;
         fecha_creacion = data.fecha_creacion;
 
-        updateChartsOptions(); 
+        updateChartsOptions();
     }
 
     // La cantidad màxima de valores por gráfica.
@@ -506,109 +690,151 @@ function pageAndFilter(pagina) {
         }
 
         updateChartsOptions();
-        
+
+    }
+</script>
+<script>
+    function formatLocalDate(dateString){
+
+        if (!dateString) return "Sin fecha";
+
+        // 🔥 Intento directo (ISO funciona aquí)
+        let date = new Date(dateString);
+
+        // 🔴 Si falla (Invalid Date)
+        if (isNaN(date.getTime())) {
+
+            // 👉 convertir formato "dd/mm/yyyy hh:mm"
+            const parts = dateString.split(' ');
+            const fecha = parts[0].split('/');
+            const hora = parts[1] || "00:00";
+
+            const [dia, mes, anio] = fecha;
+
+            date = new Date(`${anio}-${mes}-${dia}T${hora}`);
+        }
+
+        // 🔴 Si sigue fallando
+        if (isNaN(date.getTime())) return "Fecha inválida";
+
+        return date.toLocaleTimeString('es-MX', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
     }
 </script>
 
 <!-- Diagnóstico -->
 <script>
-    // Script de diagnóstico. Lo ideal sería que se extraiga desde los registros recientes para no hacer una doble consulta.
-    // También hay que esperar que los sockets envien la información con el diagnóstico para tener evitar otra consulta.
-    // Ambas cosas se pueden solucionar con una lógica de diagnóstico integrado en otra función, pero luego se verá la optimización.
-
-    const last_ph = document.getElementById('last_ph');
-    const last_temp = document.getElementById('last_temp');
-    const last_tds = document.getElementById('last_tds');
-    const last_turb = document.getElementById('last_turb');
-
-    function showDiagnostic(registro, score){
-
-        if (Array.isArray(registro) && registro.length === 0)
-            return;
-        // Ùltimo registro
-        last_ph.querySelector('h2').innerText = registro.ph;
-        last_temp.querySelector('h2').innerText = registro.temperatura;
-        last_turb.querySelector('h2').innerText = registro.turbidez;
-        last_tds.querySelector('h2').innerText = registro.conductividad;
-
-        if (Array.isArray(score) && score.length === 0)
-            return;
-        
-        // Score
-        mapStatus('ph', score.score_ph);
-        mapStatus('temperatura', score.score_temperatura);
-        mapStatus('turbidez', score.score_turbidez);
-        mapStatus('conductividad', score.score_conductividad);
-
-        monitorTabsContent.querySelector('p').innerText = `ESTADO ${score.estado.toUpperCase()} - ${score.recomendacion}.`;
-        monitorTabsContent.querySelector('.small').innerText = `Basado en la última lectura ${relativeTime(registro.fecha_creacion)}.`;
-    }
-
-    const colorClasses = ['success', 'warning', 'danger'];
-    function mapStatus(value, status){
-        // Usar un switch case permite modificar un único cuadro, en caso de ser necesario.
-        // Sino hace falta esa función, se eliminaría todo lo del swicth y case, además de
-        // que status deberá ser un diccionario, o al menos un array para distinguir entre ellos.
-        console.log(`Mapeando ${value} con score ${status}`);
-        switch(value){
-            case 'ph':
-                // Todos los 'statusText' deben tener un formato de valores del 1 al 3 
-                // Siguiendo 'Normal', 'Medio' y Malo. 
-                statusText = ['Normal', 'Medio', 'Malo'];
-                mapColorClasess(last_ph.querySelector('span'), status);
-                last_ph.querySelector('span').innerText = statusText[status];
-                return;
-            case 'temperatura':
-                statusText = ['Normal', 'Medio', 'Malo'];
-                mapColorClasess(last_temp.querySelector('span'), status);
-                last_temp.querySelector('span').innerText = statusText[status];
-                return;
-            case 'conductividad':
-                statusText = ['Normal', 'Medio', 'Malo'];
-                mapColorClasess(last_tds.querySelector('span'), status);
-                last_tds.querySelector('span').innerText = statusText[status];
-                return;
-            case 'turbidez':
-                statusText = ['Normal', 'Medio', 'Malo'];
-                mapColorClasess(last_turb.querySelector('span'), status);
-                last_turb.querySelector('span').innerText = statusText[status];
-                return;
-            default: return;
-        }
+    // Referencias a los contenedores de las tarjetas
+    const cards = {
+        ph: document.getElementById('last_ph'),
+        temperatura: document.getElementById('last_temp'),
+        conductividad: document.getElementById('last_tds'),
+        turbidez: document.getElementById('last_turb')
     };
 
-    function mapColorClasess(label, status){
-        for(i=0; i<3; i++){
-            label.classList.remove(`bg-${colorClasses[i]}-subtle`,`text-${colorClasses[i]}`);
-        }
+    const colorClasses = ['success', 'warning', 'danger'];
+    const statusTextMap = ['Normal', 'Medio', 'Malo'];
 
-        label.classList.add(`bg-${colorClasses[status]}-subtle`,`text-${colorClasses[status]}`);
+    function showDiagnostic(registro, diagnostico) {
+        if (!registro || !diagnostico) return;
+
+        // 1. Actualizar valores numéricos
+        cards.ph.querySelector('h2').innerText = registro.ph;
+        cards.temperatura.querySelector('h2').innerText = registro.temperatura;
+        cards.turbidez.querySelector('h2').innerText = registro.turbidez;
+        cards.conductividad.querySelector('h2').innerText = registro.conductividad;
+
+        // 2. Mapear estados y colores (Usamos los keys que vienen de Django)
+        updateCardVisuals('ph', diagnostico.score_ph);
+        updateCardVisuals('temperatura', diagnostico.score_temperatura);
+        updateCardVisuals('turbidez', diagnostico.score_turbidez);
+        updateCardVisuals('conductividad', diagnostico.score_conductividad);
+
+        // 3. Actualizar resumen general
+        const resumenElement = monitorTabsContent.querySelector('p');
+        const tiempoElement = monitorTabsContent.querySelector('.small');
+
+        resumenElement.innerText = `ESTADO ${diagnostico.estado.toUpperCase()} - ${diagnostico.recomendacion}.`;
+
+        // Cambiar color del texto del estado general
+        resumenElement.className = `fw-bold text-${colorClasses[calculateGeneralScore(diagnostico)]}`;
+
+        tiempoElement.innerText = `Basado en la última lectura ${relativeTime(registro.fecha_creacion)}.`;
     }
 
+    function updateCardVisuals(key, score) {
+        const card = cards[key];
+        const badge = card.querySelector('span');
+        const h2 = card.querySelector('h2');
+
+        // Limpiar clases anteriores
+        colorClasses.forEach(cls => {
+            badge.classList.remove(`bg-${cls}-subtle`, `text-${cls}`);
+            h2.classList.remove(`text-${cls}`);
+        });
+
+        // Aplicar nuevas clases según el score (0: success, 1: warning, 2: danger)
+        const color = colorClasses[score];
+        badge.classList.add(`bg-${color}-subtle`, `text-${color}`);
+        badge.innerText = statusTextMap[score];
+
+        // OPCIONAL: Si quieres que el número (H2) también cambie de color:
+        h2.classList.add(`text-${color}`);
+    }
+
+    // Función auxiliar para saber el color del estado general
+    function calculateGeneralScore(diag) {
+        if (diag.estado === "Bueno") return 0;
+        if (diag.estado === "Regular") return 1;
+        return 2;
+    }
 </script>
 
 <!-- Sockets -->
 <script>
-    // Script para gestionar la conexión a websockets 
-  
-    // const chatSocket = new WebSocket(
-    //     'ws://' + window.location.host + '/ws/chat/' + ID + '/'
-    // );
+    //Script para gestionar la conexión a websockets
+    //Se agrega esto para que no se corrompa en produccion
+    const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
 
-    // const transmision_status = document.getElementById('transmision_status');
-    // chatSocket.onclose = function(e) {
-    //     transmision_status.classList.remove('bg-success-subtle', 'text-success', 'border-success-subtle')
-    //     transmision_status.classList.add('bg-danger-subtle', 'text-danger', 'border-danger-subtle')
-    //     transmision_status.innerHTML = '<i class="fas fa-circle me-2 animate-pulse"></i> Sin conexión'
-    //     console.error('Chat socket cerrado inesperadamente');
-    // };
+    const chatSocket = new WebSocket(
+        protocol + window.location.host + '/ws/chat/' + ID + '/'
+    );
 
-    // chatSocket.onmessage = function(e) {
-    //     const data = JSON.parse(e.data);
-    //     console.log("Mensaje recibido: ", data);
-    //     updateChartsData(data.registro);
-    //     showDiagnostic(data.registro, data.diagnostico);
-    // };
+    const transmision_status = document.getElementById('transmision_status');
+    chatSocket.onclose = function(e) {
+        transmision_status.classList.remove('bg-success-subtle', 'text-success', 'border-success-subtle')
+        transmision_status.classList.add('bg-danger-subtle', 'text-danger', 'border-danger-subtle')
+        transmision_status.innerHTML = '<i class="fas fa-circle me-2 animate-pulse"></i> Sin conexión'
+        console.error('Chat socket cerrado inesperadamente');
+    };
+
+    chatSocket.onmessage = function(e) {
+        const data = JSON.parse(e.data);
+        console.log("Mensaje recibido: ", data);
+
+        // 1. Actualiza gráficas y diagnóstico (lo que ya tenías)
+        updateChartsData(data.registro);
+        showDiagnostic(data.registro, data.diagnostico);
+
+        // 2. ACTUALIZAR TABLA HISTÓRICA EN VIVO
+        // Agregamos el nuevo registro al inicio de nuestra lista maestra
+        allItems.unshift(data.registro);
+
+        // Verificamos si el dato nuevo debe mostrarse según el filtro actual
+        const filtroActual = document.getElementById('filter-date').value;
+        const fechaReg = new Date(data.registro.fecha_creacion);
+        const fechaLocalStr = `${fechaReg.getFullYear()}-${String(fechaReg.getMonth() + 1).padStart(2, '0')}-${String(fechaReg.getDate()).padStart(2, '0')}`;
+
+        if (!filtroActual || filtroActual === fechaLocalStr) {
+            // Si coincide con el filtro (o no hay filtro), lo metemos a la lista filtrada
+            filteredItems.unshift(data.registro);
+            // Volvemos a renderizar para que aparezca en la página 1
+            renderTable();
+        }
+    };
 </script>
 
 {% endblock %}

@@ -18,8 +18,8 @@ def mis_boyas(request):
 
 
 def detalle_boya(request, id):
-    datos = { # Es un diccionario porque, si hace falta enviar más datos, no afectará la estructura de los demás.
-        'id': id
+    datos = {  # Es un diccionario porque, si hace falta enviar más datos, no afectará la estructura de los demás.
+        "id": id
     }
     return render(request, "web/detalle_boya.html", datos)
 
