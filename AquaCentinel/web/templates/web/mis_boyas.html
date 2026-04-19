@@ -55,19 +55,22 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="descriptionModalID">Esperando información....</h5>
-        <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </button>
       </div>
       <form id="descriptionForm" method="post" action="{% url 'api:boyaDescripcion' %}">
       <div class="modal-body">
             {% csrf_token %}
             <input type="hidden" name="id" id="desc_boya_id">
-            <div class="form-group">
+            <div class="mb-3">
                 <label for="message-text" class="col-form-label">Descripción:</label>
                 <textarea class="form-control" id="description_area" name="descripcion" maxlength="255" required></textarea>
             </div>
-        </div><p>pe</p>
+            <div class="mb-3">
+                <p id="desc_msg"></p>
+            </div>
+        </div>
+
         <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
             <button type="submit" class="btn btn-success" id="submit_desc_btn">Guardar</button>
@@ -160,6 +163,7 @@ var ff;
 //mis-boyas/descripcion
     const descriptionForm = document.getElementById('descriptionForm');
     const submit_desc_btn = document.getElementById('submit_desc_btn');
+    const desc_msg = document.getElementById('desc_msg');
 
         descriptionForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -167,7 +171,7 @@ var ff;
             submit_desc_btn.disabled = true;
 
             const formData = new FormData(descriptionForm);
-            // message.innerText = "Esperando respuesta...";
+            desc_msg.innerText = "Esperando respuesta...";
 
             try {
                 const response = await fetch(descriptionForm.action, {
@@ -178,12 +182,12 @@ var ff;
                     const resultado = await response.json();
 
                     document.getElementById("desc_" + formData.get('id')).innerText = formData.get('descripcion');
-                    // message.innerText = "Boya Vinculada con éxito.";
+                    desc_msg.innerText = "Descipción actualizada.";
                     form.reset();
                     submit_desc_btn.disabled = false;
                 } else {
                     msg = await response.json();
-                    // message.innerText = msg.message;
+                    desc_msg.innerText = msg.message;
                     submit_desc_btn.disabled = false;
                 }
 
@@ -207,7 +211,8 @@ var ff;
             description_area.value = "";
         else
             description_area.value = desc_boya.innerText;
-
+        
+        desc_msg.innerText = "";
         desc_boya_id.value = id;
         title.innerText = `Descripción de la boya con ID ${id}`;
     })
