@@ -250,8 +250,7 @@
             }
             return response.json();
         }).then(data => {
-            aaa = data;
-            console.log(data);
+
             const boya = data.boya;
 
             boya_div.querySelector('h1').innerText = boya.codigo_boya;

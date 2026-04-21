@@ -159,7 +159,6 @@
         }
 
     });
-var ff;
 //mis-boyas/descripcion
     const descriptionForm = document.getElementById('descriptionForm');
     const submit_desc_btn = document.getElementById('submit_desc_btn');
@@ -221,6 +220,8 @@ var ff;
 
 <script>
     const container = document.getElementById('boyas_container');
+    const boyaLastConnect = {};
+    let checkAlive;
 
     async function getBoyas(){
         const response = await fetch('/api/mis-boyas', {
@@ -235,10 +236,43 @@ var ff;
 
         if (response.ok) {
             console.log("Proceso exitoso.");
-            for(i=0; i < data.length; i++){
-                console.log(data[i])
+            const IdRooms = [];
+
+            for(let i=0; i < data.length; i++){
+                console.log(data[i]);
                 createCard(data[i]);
+                IdRooms.push(data[i].id);
+
+                let dataTime;
+                if(data[i].registro.fecha_creacion == null)
+                    dataTime = new Date();
+                else
+                    dataTime = new Date(data[i].registro.fecha_creacion);
+
+                boyaLastConnect[data[i].id] = {
+                    time: dataTime.getTime(),
+                    checkTime: 3000
+                };
             }
+
+            console.log("Preparando salas para conexión de sockets...");
+
+            initSockets(IdRooms);
+            checkAlive = setInterval(() => {
+                const now = new Date();
+
+                const timeNow = now.getTime();
+                Object.keys(boyaLastConnect).forEach(boya => {
+                    const diff = timeNow - boyaLastConnect[boya].time
+                    
+                    console.log(`card_status_${boya}`)
+                    if(diff > boyaLastConnect[boya].checkTime)
+                        document.getElementById(`card_status_${boya}`).innerText = "Fuera de línea"
+                    else
+                        document.getElementById(`card_status_${boya}`).innerText = "Activa"
+                });
+            }, 5000);
+
         } else {
             console.log("Error: " + data.message);
         }
@@ -246,6 +280,19 @@ var ff;
         
 
     }
+
+    function updateCart(data){
+        document.getElementById(`card_status_${data.id}`).innerText = "En línea.";
+        document.getElementById(`registro-ph-${data.id}`).innerText = data.ph;
+        document.getElementById(`registro-temp-${data.id}`).innerText = data.temperatura;
+
+        const dataTime = new Date(data.fecha_creacion);
+
+        boyaLastConnect[data.id] = {
+            time: dataTime.getTime()
+        }
+    }
+
     function createCard(boya) {
         var card = document.createElement('div');
         card.classList.add("col-12", "col-md-6", "col-xl-4")
@@ -264,7 +311,7 @@ var ff;
                                     <div class="d-flex align-items-center mb-4">
                                         <div class="bg-success rounded-circle me-2 animate-pulse" style="width: 10px; height: 10px;">
                                         </div>
-                                        <span class="small fw-bold text-success text-uppercase">En línea</span>
+                                        <span class="small fw-bold text-success text-uppercase" id="card_status_${boya.id}">Fuera de línea.</span>
                                     </div>
 
                                     <div class="mb-4">
@@ -276,11 +323,11 @@ var ff;
 
                                     <div class="row g-0 border-top pt-3 text-center">
                                         <div class="col-6 border-end">
-                                            <p class="h4 fw-black text-primary mb-0">${boya.registro.ph == null ? "-" : boya.registro.ph}</p>
+                                            <p class="h4 fw-black text-primary mb-0" id="registro-ph-${boya.id}">${boya.registro.ph == null ? "-" : boya.registro.ph}</p>
                                             <p class="small text-muted mb-0">pH</p>
                                         </div>
                                         <div class="col-6">
-                                            <p class="h4 fw-black text-success mb-0">${boya.registro.temperatura == null ? "-" : boya.registro.temperatura}°C</p>
+                                            <p class="h4 fw-black text-success mb-0" id="registro-temp-${boya.id}">${boya.registro.temperatura == null ? "-" : boya.registro.temperatura}°C</p>
                                             <p class="small text-muted mb-0">Temp</p>
                                         </div>
                                     </div>
@@ -298,6 +345,36 @@ var ff;
                             </div>`
 
         container.appendChild(card);
+    }
+</script>
+
+<script>
+
+    const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+
+    const sockets = {};
+
+    function initSockets(rooms){
+        
+        rooms.forEach(room => {
+            const chatSocket = new WebSocket(
+                protocol + window.location.host + '/ws/chat/' + room + '/'
+            );
+
+            console.log(`Conetcado a sala ${room}`);
+            
+            sockets[room] = chatSocket;
+            
+            chatSocket.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                console.log(`Mensaje de ${room}:`, data.message);
+                // Actualizar UI para la sala específica
+            };
+            
+            chatSocket.onclose = function(e) {
+                console.error(`Socket de ${room} cerrado inesperadamente`);
+            };
+        });
     }
 </script>
 {% endblock %}

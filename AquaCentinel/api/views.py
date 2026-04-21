@@ -35,7 +35,9 @@ def misBoyas(request):
                 try:
                     registro = traerUltimoRegistro(boyas[i]["id"])
                     boyas[i]["registro"] = model_to_dict(registro)
-                except Exception:
+                    boyas[i]["registro"]["fecha_creacion"] = registro.fecha_creacion.isoformat() 
+                except Exception as e:
+                    print(f"error: {e}")
                     boyas[i]["registro"] = []
 
             return JsonResponse(boyas, safe=False)
